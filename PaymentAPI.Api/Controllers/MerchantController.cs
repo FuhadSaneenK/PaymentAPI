@@ -45,5 +45,14 @@ namespace PaymentAPI.Api.Controllers
 
             return StatusCode(response.Status, response);
         }
+
+        // GET: api/merchant/{id}/summary
+        [HttpGet("{id}/summary")]
+        public async Task<IActionResult> GetMerchantSummary(int id)
+        {
+            var query = new GetMerchantSummaryQuery(id);
+            var response = await _mediator.Send(query);
+            return StatusCode(response.Status, response);
+        }
     }
 }
