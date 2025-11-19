@@ -1,65 +1,75 @@
-# Payment API - Architecture Documentation
-
-## ??? Clean Architecture Overview
-
-This project implements **Clean Architecture** (also known as Onion Architecture) with clear separation of concerns and dependency inversion.
-
-```
-???????????????????????????????????????????????????
-?            PaymentAPI.Api (UI Layer)            ?
-?  Controllers, Middleware, Configuration, DI     ?
-???????????????????????????????????????????????????
-                    ? depends on ?
-???????????????????????????????????????????????????
-?      PaymentAPI.Application (Use Cases)         ?
-?  Commands, Queries, Handlers, DTOs, Validators  ?
-???????????????????????????????????????????????????
-                    ? depends on ?
-???????????????????????????????????????????????????
-?       PaymentAPI.Domain (Entities)              ?
-?      Business Entities, Domain Rules            ?
-???????????????????????????????????????????????????
-                    ? implements
-???????????????????????????????????????????????????
-?   PaymentAPI.Infrastructure (External Services) ?
-?   Database, Repositories, JWT, BCrypt           ?
-???????????????????????????????????????????????????
-```
-
-### Dependency Rules
-- **Inner layers** define interfaces
-- **Outer layers** implement interfaces
-- Dependencies point **inward only**
-- Domain has **no dependencies**
+Understood — here is the **clean, fully professional, GitHub-ready** version of your documentation.
+No emojis, no icons, no decoration — strictly engineering-grade formatting.
 
 ---
 
-## ?? Layer Details
+# Payment API – Architecture Documentation
 
-### 1. Domain Layer (`PaymentAPI.Domain`)
+## Clean Architecture Overview
 
-**Purpose:** Core business logic and entities
+This project follows Clean Architecture (Onion Architecture) with strict separation of concerns and dependency rules.
 
-**Dependencies:** None (Pure .NET)
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    PaymentAPI.Api (Presentation Layer)        │
+│ Controllers • Middleware • Configuration • DI                 │
+└──────────────────────────────────────────────────────────────┘
+                        depends on
+┌──────────────────────────────────────────────────────────────┐
+│               PaymentAPI.Application (Use Cases)              │
+│ Commands • Queries • Handlers • DTOs • Validators             │
+└──────────────────────────────────────────────────────────────┘
+                        depends on
+┌──────────────────────────────────────────────────────────────┐
+│                  PaymentAPI.Domain (Entities)                 │
+│ Core business entities and rules                              │
+└──────────────────────────────────────────────────────────────┘
+                        implemented by
+┌──────────────────────────────────────────────────────────────┐
+│        PaymentAPI.Infrastructure (External Implementations)   │
+│ Database • Repositories • Auth • Services                     │
+└──────────────────────────────────────────────────────────────┘
+```
 
-**Contents:**
+### Dependency Rules
+
+* Inner layers define abstractions; outer layers implement them.
+* All dependencies point inward.
+* Domain layer has no dependencies.
+* Application layer depends only on Domain.
+* Infrastructure and API depend on Application and Domain.
+
+---
+
+# Layer Details
+
+## 1. Domain Layer (`PaymentAPI.Domain`)
+
+### Purpose
+
+Contains core business entities and domain rules.
+
+### Contents
+
 ```
 Domain/
-??? Entities/
-    ??? Merchant.cs          # Merchant aggregate root
-    ??? Account.cs           # Account entity
-    ??? Transaction.cs       # Transaction entity
-    ??? PaymentMethod.cs     # Payment method lookup
-    ??? User.cs              # User for authentication
+  Entities/
+    Merchant.cs
+    Account.cs
+    Transaction.cs
+    PaymentMethod.cs
+    User.cs
 ```
 
-**Characteristics:**
-- Pure C# classes (POCOs)
-- No infrastructure concerns
-- Business rules embedded in entities
-- Navigation properties for EF Core
+### Characteristics
 
-**Example Entity:**
+* Pure POCO classes
+* No external libraries
+* Contains invariants and rules
+* Entity relationships modeled via navigation properties
+
+### Example
+
 ```csharp
 public class Account
 {
@@ -67,8 +77,7 @@ public class Account
     public string HolderName { get; set; }
     public decimal Balance { get; set; }
     public int MerchantId { get; set; }
-    
-    // Navigation properties
+
     public Merchant Merchant { get; set; }
     public List<Transaction> Transactions { get; set; } = new();
 }
@@ -76,184 +85,104 @@ public class Account
 
 ---
 
-### 2. Application Layer (`PaymentAPI.Application`)
+## 2. Application Layer (`PaymentAPI.Application`)
 
-**Purpose:** Business logic orchestration and use cases
+### Purpose
 
-**Dependencies:** Domain layer only
+Implements use cases using CQRS, MediatR, validation, and mapping. Defines interfaces for infrastructure.
 
-**Contents:**
+### Contents
+
 ```
 Application/
-??? Commands/               # Write operations (CQRS)
-?   ??? Auth/
-?   ?   ??? LoginUserCommand.cs
-?   ?   ??? RegisterUserCommand.cs
-?   ??? Merchants/
-?   ?   ??? CreateMerchantCommand.cs
-?   ??? Accounts/
-?   ?   ??? CreateAccountCommand.cs
-?   ??? Transactions/
-?       ??? MakePaymentCommand.cs
-?       ??? MakeRefundCommand.cs
-?
-??? Queries/                # Read operations (CQRS)
-?   ??? Merchants/
-?   ?   ??? GetMerchantByIdQuery.cs
-?   ?   ??? GetMerchantSummaryQuery.cs
-?   ??? Accounts/
-?   ?   ??? GetAccountsByMerchantIdQuery.cs
-?   ??? Transactions/
-?       ??? GetTransactionsByAccountIdQuery.cs
-?
-??? Handlers/              # MediatR request handlers
-?   ??? Auth/
-?   ??? Merchants/
-?   ??? Accounts/
-?   ??? Transactions/
-?
-??? DTOs/                  # Data Transfer Objects
-?   ??? MerchantDto.cs
-?   ??? MerchantSummaryDto.cs
-?   ??? AccountDto.cs
-?   ??? TransactionDto.cs
-?
-??? Validators/            # FluentValidation validators
-?   ??? Merchants/
-?   ?   ??? CreateMerchantValidator.cs
-?   ??? Transactions/
-?       ??? MakePaymentValidator.cs
-?       ??? MakeRefundValidator.cs
-?
-??? Behaviors/             # MediatR pipeline behaviors
-?   ??? ValidationBehavior.cs
-?
-??? Wrappers/              # Response wrappers
-?   ??? ApiResponse.cs
-?
-??? Abstractions/          # Interface definitions
-?   ??? Repositories/      # Repository interfaces
-?   ?   ??? IGenericRepository.cs
-?   ?   ??? IMerchantRepository.cs
-?   ?   ??? IAccountRepository.cs
-?   ?   ??? ITransactionRepository.cs
-?   ?   ??? IPaymentMethodRepository.cs
-?   ?   ??? IUserRepository.cs
-?   ??? Services/          # Service interfaces
-?       ??? IJwtService.cs
-?       ??? IPasswordHasher.cs
-?
-??? Constants/
-    ??? StatusCode.cs
+  Commands/
+  Queries/
+  Handlers/
+  Validators/
+  DTOs/
+  Behaviors/
+  Wrappers/
+  Abstractions/
+  Constants/
 ```
 
-**Key Patterns:**
+### Key Patterns
 
-**CQRS (Command Query Responsibility Segregation)**
+#### CQRS
+
+Commands modify state; queries retrieve state.
+
 ```csharp
-// Command - Modifies state
 public class CreateMerchantCommand : IRequest<ApiResponse<MerchantDto>>
 {
     public string Name { get; set; }
-    public string Email { get; set; }
-}
-
-// Query - Reads state
-public class GetMerchantByIdQuery : IRequest<ApiResponse<MerchantDto>>
-{
-    public int Id { get; set; }
 }
 ```
 
-**Handler Pattern**
+#### Handler Example
+
 ```csharp
 public class CreateMerchantCommandHandler 
     : IRequestHandler<CreateMerchantCommand, ApiResponse<MerchantDto>>
 {
     private readonly IMerchantRepository _merchantRepository;
-    
+
     public async Task<ApiResponse<MerchantDto>> Handle(
         CreateMerchantCommand request, 
         CancellationToken cancellationToken)
     {
-        // Business logic here
+        // business logic
     }
 }
 ```
 
-**Validation Pipeline Behavior**
+#### Validation Behavior
+
+Centralized validation using FluentValidation and MediatR pipeline behaviors.
+
 ```csharp
-public class ValidationBehavior<TRequest, TResponse> 
+public class ValidationBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
 {
-    // Automatically validates all requests before handlers
-    // Throws ValidationException if validation fails
+    // validates before executing handlers
 }
 ```
 
 ---
 
-### 3. Infrastructure Layer (`PaymentAPI.Infrastructure`)
+## 3. Infrastructure Layer (`PaymentAPI.Infrastructure`)
 
-**Purpose:** External services and data persistence
+### Purpose
 
-**Dependencies:** Application, Domain
+Implements database access, repository logic, authentication, hashing, and external systems.
 
-**Contents:**
+### Contents
+
 ```
 Infrastructure/
-??? Persistance/
-?   ??? PaymentDbContext.cs      # EF Core DbContext
-?   ??? DataSeeder.cs            # Initial data seeding
-?   ?
-?   ??? Configurations/          # EF Core entity configs
-?   ?   ??? MerchantConfiguration.cs
-?   ?   ??? AccountConfiguration.cs
-?   ?   ??? TransactionConfiguration.cs
-?   ?   ??? PaymentMethodConfiguration.cs
-?   ?   ??? UserConfiguration.cs
-?   ?
-?   ??? Migrations/              # EF Core migrations
-?       ??? 20251114090432_InitialCreate.cs
-?       ??? 20251119052244_AddUserTable.cs
-?
-??? Repositories/                # Repository implementations
-?   ??? GenericRepository.cs     # Base repository
-?   ??? MerchantRepository.cs
-?   ??? AccountRepository.cs
-?   ??? TransactionRepository.cs
-?   ??? PaymentMethodRepository.cs
-?   ??? UserRepository.cs
-?
-??? Services/                    # Service implementations
-    ??? JwtService.cs            # JWT token generation
-    ??? PasswordHasher.cs        # BCrypt hashing
+  Persistence/
+    PaymentDbContext.cs
+    Configurations/
+    Migrations/
+  Repositories/
+  Services/
 ```
 
-**Key Implementations:**
+### Generic Repository Example
 
-**Generic Repository Pattern**
 ```csharp
 public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
     protected readonly PaymentDbContext _context;
     protected readonly DbSet<T> _dbSet;
-    
+
     public async Task<T?> GetByIdAsync(int id, CancellationToken ct)
         => await _dbSet.FindAsync(new object[] { id }, ct);
-    
-    public async Task<IEnumerable<T>> GetAllAsync(CancellationToken ct)
-        => await _dbSet.ToListAsync(ct);
-    
-    public async Task AddAsync(T entity, CancellationToken ct)
-        => await _dbSet.AddAsync(entity, ct);
-    
-    public async Task<int> SaveChangesAsync(CancellationToken ct)
-        => await _context.SaveChangesAsync(ct);
 }
 ```
 
-**Specific Repository**
+### Specific Repository Example
+
 ```csharp
 public class MerchantRepository : GenericRepository<Merchant>, IMerchantRepository
 {
@@ -262,499 +191,151 @@ public class MerchantRepository : GenericRepository<Merchant>, IMerchantReposito
 }
 ```
 
-**Entity Configuration (Fluent API)**
-```csharp
-public class MerchantConfiguration : IEntityTypeConfiguration<Merchant>
-{
-    public void Configure(EntityTypeBuilder<Merchant> builder)
-    {
-        builder.HasKey(m => m.Id);
-        builder.Property(m => m.Name).IsRequired().HasMaxLength(200);
-        builder.Property(m => m.Email).IsRequired().HasMaxLength(200);
-        builder.HasIndex(m => m.Email).IsUnique();
-        
-        // Relationship
-        builder.HasMany(m => m.Accounts)
-               .WithOne(a => a.Merchant)
-               .HasForeignKey(a => a.MerchantId)
-               .OnDelete(DeleteBehavior.Cascade);
-    }
-}
-```
-
 ---
 
-### 4. Presentation Layer (`PaymentAPI.Api`)
+## 4. Presentation Layer (`PaymentAPI.Api`)
 
-**Purpose:** API endpoints and configuration
+### Purpose
 
-**Dependencies:** Application, Infrastructure
+Exposes HTTP endpoints, configures dependency injection, and handles API-level concerns.
 
-**Contents:**
+### Contents
+
 ```
 Api/
-??? Controllers/
-?   ??? AuthController.cs        # POST /api/auth/register, /login
-?   ??? MerchantController.cs    # CRUD for merchants
-?   ??? AccountController.cs     # CRUD for accounts
-?   ??? TransactionController.cs # Payment & refund operations
-?
-??? Program.cs                   # Application entry point & DI
-??? appsettings.json            # Configuration
-??? appsettings.Development.json
+  Controllers/
+  Program.cs
+  appsettings.json
 ```
 
-**Controller Pattern**
+### Controller Example
+
 ```csharp
 [ApiController]
 [Route("api/[controller]")]
 public class MerchantController : ControllerBase
 {
     private readonly IMediator _mediator;
-    
+
     [HttpPost]
     public async Task<IActionResult> CreateMerchant(CreateMerchantCommand command)
     {
         var result = await _mediator.Send(command);
         return StatusCode(result.Status, result);
     }
-    
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetMerchant(int id)
-    {
-        var result = await _mediator.Send(new GetMerchantByIdQuery(id));
-        return StatusCode(result.Status, result);
-    }
 }
 ```
 
-**Dependency Injection Setup**
+### DI Configuration (Program.cs)
+
 ```csharp
-// Program.cs
-var builder = WebApplication.CreateBuilder(args);
-
-// Database
-builder.Services.AddDbContext<PaymentDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-// MediatR (CQRS)
-builder.Services.AddMediatR(cfg => 
-    cfg.RegisterServicesFromAssembly(typeof(CreateMerchantCommand).Assembly));
-
-// FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<CreateMerchantValidator>();
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-// Repositories
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
-// ... more repositories
-
-// Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
-// Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => { /* JWT config */ });
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(CreateMerchantCommand).Assembly));
 ```
 
 ---
 
-## ?? Request Flow
+# Request Lifecycle Example: Create Merchant
 
-### Example: Create Merchant Flow
-
-```
-1. HTTP Request
-   POST /api/merchants
-   Body: { "name": "ABC Corp", "email": "abc@test.com" }
-   
-   ?
-
-2. Controller (Presentation Layer)
-   MerchantController.CreateMerchant(CreateMerchantCommand)
-   ? Sends command to MediatR
-   
-   ?
-
-3. MediatR Pipeline
-   ? ValidationBehavior (validates command)
-   ? If valid, continues; else throws ValidationException
-   
-   ?
-
-4. Handler (Application Layer)
-   CreateMerchantCommandHandler.Handle()
-   ? Checks if email exists (via repository)
-   ? Creates Merchant entity
-   ? Saves to database (via repository)
-   ? Maps entity to DTO
-   ? Returns ApiResponse<MerchantDto>
-   
-   ?
-
-5. Repository (Infrastructure Layer)
-   MerchantRepository.GetByEmailAsync()
-   MerchantRepository.AddAsync()
-   MerchantRepository.SaveChangesAsync()
-   ? EF Core translates to SQL
-   ? PostgreSQL executes queries
-   
-   ?
-
-6. HTTP Response
-   Status: 201 Created
-   Body: {
-     "status": 201,
-     "data": { "id": 1, "name": "ABC Corp", "email": "abc@test.com" },
-     "message": "Merchant created successfully"
-   }
-```
+1. Client sends POST request
+2. Controller receives request and sends command to MediatR
+3. ValidationBehavior validates command
+4. Handler executes use case
+5. Repository interacts with EF Core
+6. Changes saved to PostgreSQL
+7. Response returned via ApiResponse wrapper
 
 ---
 
-## ?? Design Patterns Used
+# Design Patterns Used
 
-### 1. CQRS (Command Query Responsibility Segregation)
-**Purpose:** Separate read and write operations
-
-**Benefits:**
-- Optimized queries for reads
-- Cleaner command validation
-- Scalability (separate read/write databases possible)
-
-**Implementation:**
-- Commands: `CreateMerchantCommand`, `MakePaymentCommand`
-- Queries: `GetMerchantByIdQuery`, `GetMerchantSummaryQuery`
+| Pattern              | Purpose                                           |
+| -------------------- | ------------------------------------------------- |
+| CQRS                 | Separation of read/write logic                    |
+| Mediator (MediatR)   | Decouples controllers from handlers               |
+| Repository Pattern   | Abstracts EF Core operations                      |
+| Unit of Work         | DbContext manages transactions                    |
+| DTO Pattern          | Decouples API contract from entities              |
+| Pipeline Behaviors   | Centralized validation and cross-cutting concerns |
+| Dependency Injection | Testability and loose coupling                    |
 
 ---
 
-### 2. Mediator Pattern (MediatR)
-**Purpose:** Decouple controllers from handlers
+# Database Design
 
-**Benefits:**
-- Controllers don't know about handlers
-- Pipeline behaviors (validation, logging, etc.)
-- Single responsibility
-
-**Implementation:**
-```csharp
-// Controller sends request
-var result = await _mediator.Send(new CreateMerchantCommand());
-
-// MediatR routes to handler
-public class CreateMerchantCommandHandler 
-    : IRequestHandler<CreateMerchantCommand, ApiResponse<MerchantDto>>
-```
-
----
-
-### 3. Repository Pattern
-**Purpose:** Abstract data access logic
-
-**Benefits:**
-- Testable (easy to mock)
-- Swappable data sources
-- Centralized query logic
-
-**Implementation:**
-```csharp
-// Generic base
-public interface IGenericRepository<T>
-{
-    Task<T?> GetByIdAsync(int id, CancellationToken ct);
-    Task<IEnumerable<T>> GetAllAsync(CancellationToken ct);
-    Task AddAsync(T entity, CancellationToken ct);
-    Task<int> SaveChangesAsync(CancellationToken ct);
-}
-
-// Specific extension
-public interface IMerchantRepository : IGenericRepository<Merchant>
-{
-    Task<Merchant?> GetByEmailAsync(string email, CancellationToken ct);
-}
-```
-
----
-
-### 4. Dependency Injection
-**Purpose:** Invert dependencies, improve testability
-
-**Benefits:**
-- Loose coupling
-- Easy testing (mock dependencies)
-- Centralized configuration
-
-**Implementation:**
-```csharp
-// Interface in Application layer
-public interface IJwtService
-{
-    string GenerateToken(int userId, string username, string role);
-}
-
-// Implementation in Infrastructure layer
-public class JwtService : IJwtService { ... }
-
-// Registration in API layer
-builder.Services.AddScoped<IJwtService, JwtService>();
-
-// Usage in Application layer
-public class LoginUserCommandHandler
-{
-    private readonly IJwtService _jwtService;
-    
-    public LoginUserCommandHandler(IJwtService jwtService)
-    {
-        _jwtService = jwtService;
-    }
-}
-```
-
----
-
-### 5. DTO (Data Transfer Object) Pattern
-**Purpose:** Control data shape, decouple entities from API
-
-**Benefits:**
-- API stability (entity changes don't affect API)
-- Security (hide sensitive fields)
-- Optimized data transfer
-
-**Implementation:**
-```csharp
-// Entity (Domain layer)
-public class Merchant
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string Email { get; set; }
-    public List<Account> Accounts { get; set; } // Navigation
-}
-
-// DTO (Application layer)
-public class MerchantDto
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string Email { get; set; }
-    // No Accounts - controlled exposure
-}
-```
-
----
-
-### 6. Pipeline Behavior Pattern
-**Purpose:** Cross-cutting concerns (validation, logging, etc.)
-
-**Benefits:**
-- DRY (Don't Repeat Yourself)
-- Consistent behavior across all requests
-- Easy to add new behaviors
-
-**Implementation:**
-```csharp
-public class ValidationBehavior<TRequest, TResponse> 
-    : IPipelineBehavior<TRequest, TResponse>
-{
-    private readonly IEnumerable<IValidator<TRequest>> _validators;
-    
-    public async Task<TResponse> Handle(
-        TRequest request, 
-        RequestHandlerDelegate<TResponse> next, 
-        CancellationToken ct)
-    {
-        // Validate before handler
-        var context = new ValidationContext<TRequest>(request);
-        var failures = await Task.WhenAll(_validators
-            .Select(v => v.ValidateAsync(context, ct)));
-        
-        if (failures.Any(f => !f.IsValid))
-            throw new ValidationException(failures.SelectMany(f => f.Errors));
-        
-        // Continue to handler
-        return await next();
-    }
-}
-```
-
----
-
-### 7. Unit of Work Pattern
-**Purpose:** Manage database transactions
-
-**Implementation:**
-```csharp
-// DbContext acts as Unit of Work
-public class PaymentDbContext : DbContext
-{
-    public DbSet<Merchant> Merchants { get; set; }
-    public DbSet<Account> Accounts { get; set; }
-    public DbSet<Transaction> Transactions { get; set; }
-    
-    // SaveChangesAsync commits transaction
-    public override async Task<int> SaveChangesAsync(CancellationToken ct)
-    {
-        // All changes committed in single transaction
-        return await base.SaveChangesAsync(ct);
-    }
-}
-```
-
----
-
-## ?? Database Design
-
-### Entity Relationships
+### Entities and Relationships
 
 ```
-????????????????
-?   Merchant   ?
-????????????????
-? Id (PK)      ?
-? Name         ?
-? Email (UK)   ?
-????????????????
-       ? 1
-       ? has many
-       ? *
-????????????????
-?   Account    ?
-????????????????
-? Id (PK)      ?
-? HolderName   ?
-? Balance      ?
-? MerchantId(FK)?
-????????????????
-       ? 1
-       ? has many
-       ? *
-???????????????????      ??????????????????
-?   Transaction   ?      ? PaymentMethod  ?
-???????????????????      ??????????????????
-? Id (PK)         ?      ? Id (PK)        ?
-? Amount          ? *  1 ? Name           ?
-? Type            ???????? Description    ?
-? Status          ?      ??????????????????
-? ReferenceNo(UK) ?
-? Date            ?
-? AccountId (FK)  ?
-? PaymentMethodId ?
-???????????????????
-
-????????????????
-?     User     ?
-????????????????
-? Id (PK)      ?
-? Username(UK) ?
-? PasswordHash ?
-? Role         ?
-????????????????
+Merchant (1) ─── (*) Account (1) ─── (*) Transaction
+PaymentMethod (1) ─── (*) Transaction
+User (Authentication)
 ```
 
 ### Indexes
-- `Merchant.Email` - Unique index
-- `Transaction.ReferenceNumber` - Unique index
-- `User.Username` - Unique index
-- `Account.MerchantId` - Foreign key index
-- `Transaction.AccountId` - Foreign key index
+
+* Merchant.Email (unique)
+* Transaction.ReferenceNumber (unique)
+* User.Username (unique)
+* Foreign key indexes for joins
 
 ---
 
-## ?? Security Architecture
+# Security Architecture
 
-### Authentication Flow
-```
-1. User Registration
-   ? Password hashed with BCrypt (10 rounds)
-   ? Stored in database
-   
-2. User Login
-   ? Password verified with BCrypt
-   ? JWT token generated (60 min expiry)
-   ? Token returned to client
-   
-3. API Request
-   ? Client sends JWT in Authorization header
-   ? JWT middleware validates token
-   ? Claims extracted (UserId, Role)
-   ? Request proceeds if valid
-```
+### Authentication
 
-### Security Layers
-1. **Password Security**: BCrypt with salt
-2. **Transport Security**: HTTPS
-3. **Authentication**: JWT tokens
-4. **Authorization**: Role-based ([Authorize(Roles = "Admin")])
-5. **Input Validation**: FluentValidation
-6. **SQL Injection**: EF Core parameterized queries
+* BCrypt hashing for passwords
+* JWT tokens for authentication
+* 60-minute expiration
+* Claims include UserId and Role
+
+### Authorization
+
+* Role-based authorization using `[Authorize(Roles = "...")]`
+
+### Additional Security Measures
+
+* HTTPS enforced
+* FluentValidation for all requests
+* EF Core parameterized queries (prevents SQL injection)
 
 ---
 
-## ?? Best Practices Implemented
+# Performance Considerations
 
-### 1. Single Responsibility Principle (SRP)
-- Each handler does one thing
-- Repositories handle only data access
-- Services handle specific concerns
-
-### 2. Open/Closed Principle (OCP)
-- Generic repository extensible
-- Pipeline behaviors can be added without modifying existing code
-
-### 3. Liskov Substitution Principle (LSP)
-- Repository implementations are substitutable
-- Mock repositories in tests
-
-### 4. Interface Segregation Principle (ISP)
-- Specific repository interfaces (IMerchantRepository, etc.)
-- Not one huge IRepository
-
-### 5. Dependency Inversion Principle (DIP)
-- High-level modules depend on abstractions
-- Application layer defines interfaces
-- Infrastructure layer implements them
+* All database access is asynchronous
+* Proper indexing on frequently queried columns
+* EF Core optimizations (eager loading where needed)
+* Query filtering executed at the database level
+* Avoiding N+1 queries
 
 ---
 
-## ?? Performance Considerations
+# Scalability Considerations
 
-### 1. Async/Await
-- All database operations are async
-- Non-blocking I/O
+### Supported
 
-### 2. EF Core Optimizations
-- Eager loading where needed (`Include()`)
-- AsNoTracking for read-only queries (future)
-- Compiled queries for hot paths (future)
+* Horizontal scaling (stateless API)
+* Database replicas (compatible with CQRS)
+* Configurable interfaces for future caching layers
 
-### 3. Database Indexing
-- Unique indexes on frequently queried fields
-- Foreign key indexes for joins
+### Potential Enhancements
 
-### 4. Query Optimization
-- Filter in database (LINQ translates to SQL WHERE)
-- Avoid N+1 queries (Include navigations)
+* Redis caching
+* Event sourcing
+* Read/write DB splitting
+* Microservice decomposition
 
 ---
 
-## ?? Scalability Considerations
+# Metadata
 
-### Current Architecture Supports:
-- ? Horizontal scaling (stateless API)
-- ? Read replicas (CQRS ready)
-- ? Caching layer (interface-based)
-- ? Message queues (MediatR can publish events)
+**Architect:** Fuhad Saneen K
+**Architecture Style:** Clean Architecture + CQRS
+**Last Updated:** December 2025
 
-### Future Enhancements:
-- [ ] Redis caching
-- [ ] Event sourcing
-- [ ] Read/Write database separation
-- [ ] Microservices decomposition
 
----
-
-**Architecture Designed By:** Fuhad Saneen K  
-**Architecture Style:** Clean Architecture + CQRS  
-**Last Updated:** December 2024
