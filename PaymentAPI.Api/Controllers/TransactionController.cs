@@ -1,11 +1,13 @@
 ﻿
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PaymentAPI.Application.Commands.Transactions;
 
 namespace PaymentAPI.Api.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class TransactionController : ControllerBase

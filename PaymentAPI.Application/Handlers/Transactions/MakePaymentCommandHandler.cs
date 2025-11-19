@@ -12,11 +12,22 @@ using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Handlers.Transactions
 {
+    /// <summary>
+    /// Handles the <see cref="MakePaymentCommand"/> to process payment transactions.
+    /// Validates account, payment method, and reference number before creating the transaction and updating the account balance.
+    /// </summary>
     public class MakePaymentCommandHandler:IRequestHandler<MakePaymentCommand,ApiResponse<TransactionDto>>
     {
         private readonly IAccountRepository _accountRepository;
         private readonly IPaymentMethodRepository _paymentMethodRepository;
         private readonly ITransactionRepository _transactionRepository;
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MakePaymentCommandHandler"/> class.
+        /// </summary>
+        /// <param name="accountRepository">The repository for account data access.</param>
+        /// <param name="paymentMethodRepository">The repository for payment method data access.</param>
+        /// <param name="transactionRepository">The repository for transaction data access.</param>
         public MakePaymentCommandHandler(IAccountRepository accountRepository,IPaymentMethodRepository paymentMethodRepository,ITransactionRepository transactionRepository)
         {
             _accountRepository = accountRepository;
@@ -24,6 +35,24 @@ namespace PaymentAPI.Application.Handlers.Transactions
             _transactionRepository = transactionRepository;
         }
 
+        /// <summary>
+        /// Handles the payment command by validating prerequisites and creating the payment transaction.
+        /// </summary>
+        /// <param name="request">The command containing payment details.</param>
+        /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+        /// <returns>
+        /// An <see cref="ApiResponse{TransactionDto}"/> containing the created transaction if successful,
+        /// or a failure/NotFound response if validation fails.
+        /// </returns>
+        /// <remarks>
+        /// This method performs the following steps:
+        /// 1. Validates that the account exists
+        /// 2. Validates that the payment method exists
+        /// 3. Ensures the reference number is unique
+        /// 4. Creates the payment transaction with status "Completed"
+        /// 5. Credits the account balance with the payment amount
+        /// 6. Persists all changes to the database
+        /// </remarks>
         public async Task<ApiResponse<TransactionDto>> Handle(MakePaymentCommand request, CancellationToken cancellationToken)
         {
             // 1. Validate Account

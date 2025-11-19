@@ -81,9 +81,23 @@ namespace PaymentAPI.Infrastructure.Persistance
                 await context.SaveChangesAsync();
             }
 
+            // -------- USERS --------
+            if (!context.Users.Any())
+            {
+                var users = new List<User>
+    {
+        new User { Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"), Role = "Admin" },
+        new User { Username = "user1", PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), Role = "User" }
+    };
+
+                await context.Users.AddRangeAsync(users);
+                await context.SaveChangesAsync();
+            }
+
+
 
         }
-        
+
 
     }
 }
