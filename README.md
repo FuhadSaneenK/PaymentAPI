@@ -4,7 +4,7 @@ A comprehensive RESTful API for managing merchants, accounts, payments, and refu
 
 ---
 
-## ??? Architecture
+##  Architecture
 
 This project follows **Clean Architecture** with clear separation of concerns:
 
@@ -47,7 +47,7 @@ PaymentAPI/
 
 ---
 
-## ?? Features
+##  Features
 
 ### Authentication & Authorization
 - ? User registration with BCrypt password hashing
@@ -80,7 +80,7 @@ PaymentAPI/
 
 ---
 
-## ??? Technology Stack
+##  Technology Stack
 
 ### Backend Framework
 - **.NET 8** - Latest LTS version
@@ -116,7 +116,7 @@ PaymentAPI/
 
 ---
 
-## ?? Database Schema
+##  Database Schema
 
 ### Entities
 
@@ -156,7 +156,7 @@ PaymentAPI/
 
 ---
 
-## ?? API Endpoints
+##  API Endpoints
 
 ### Authentication
 ```http
@@ -186,7 +186,7 @@ GET    /api/transactions/account/{accountId} # Get transactions
 
 ---
 
-## ?? Configuration
+##  Configuration
 
 ### appsettings.json
 ```json
@@ -205,7 +205,7 @@ GET    /api/transactions/account/{accountId} # Get transactions
 
 ---
 
-## ?? Getting Started
+##  Getting Started
 
 ### Prerequisites
 - .NET 8 SDK
@@ -240,7 +240,7 @@ dotnet run
 
 ---
 
-## ?? Testing
+##  Testing
 
 ### Run All Tests
 ```bash
@@ -259,7 +259,7 @@ dotnet test PaymentAPI.Tests/PaymentAPI.Tests.csproj --logger "console;verbosity
 
 ---
 
-## ?? Project Structure
+##  Project Structure
 
 ```
 PaymentAPI/
@@ -314,7 +314,7 @@ PaymentAPI/
 
 ---
 
-## ?? Security Features
+##  Security Features
 
 1. **Password Security**
    - BCrypt hashing (salt + hash)
@@ -338,7 +338,7 @@ PaymentAPI/
 
 ---
 
-## ?? Design Patterns Used
+##  Design Patterns Used
 
 1. **CQRS** (Command Query Responsibility Segregation)
    - Commands for write operations
@@ -362,7 +362,7 @@ PaymentAPI/
 
 ---
 
-## ?? Business Rules
+##  Business Rules
 
 ### Merchant Rules
 - ? Email must be unique
@@ -391,7 +391,7 @@ PaymentAPI/
 
 ---
 
-## ?? Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
@@ -401,9 +401,7 @@ PaymentAPI/
 
 ---
 
-## ?? License
 
-This project is licensed under the MIT License.
 
 ---
 
