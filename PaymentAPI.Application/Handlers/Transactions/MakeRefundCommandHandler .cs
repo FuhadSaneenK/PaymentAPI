@@ -12,15 +12,46 @@ using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Handlers.Transactions
 {
+    /// <summary>
+    /// Handles the <see cref="MakeRefundCommand"/> to process refund transactions.
+    /// Validates the original payment, ensures refund amount is valid, and updates the account balance.
+    /// </summary>
     public class MakeRefundCommandHandler : IRequestHandler<MakeRefundCommand, ApiResponse<TransactionDto>>
     {
         private readonly ITransactionRepository _transactionRepository;
         private readonly IAccountRepository _accountRepository;
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MakeRefundCommandHandler"/> class.
+        /// </summary>
+        /// <param name="transactionRepository">The repository for transaction data access.</param>
+        /// <param name="accountRepository">The repository for account data access.</param>
         public MakeRefundCommandHandler(ITransactionRepository transactionRepository, IAccountRepository accountRepository)
         {
             _transactionRepository = transactionRepository;
             _accountRepository = accountRepository;
         }
+        
+        /// <summary>
+        /// Handles the refund command by validating the original payment and creating the refund transaction.
+        /// </summary>
+        /// <param name="request">The command containing refund details.</param>
+        /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+        /// <returns>
+        /// An <see cref="ApiResponse{TransactionDto}"/> containing the created refund transaction if successful,
+        /// or a failure/NotFound response if validation fails.
+        /// </returns>
+        /// <remarks>
+        /// This method performs the following validations and steps:
+        /// 1. Validates that the account exists
+        /// 2. Validates that the original payment transaction exists
+        /// 3. Ensures refund amount does not exceed original payment amount
+        /// 4. Checks that no refund already exists for this reference number
+        /// 5. Verifies the reference number belongs to the specified account
+        /// 6. Creates the refund transaction with "-REF" suffix on reference number
+        /// 7. Debits the account balance with the refund amount
+        /// 8. Persists all changes to the database
+        /// </remarks>
         public async Task<ApiResponse<TransactionDto>> Handle(MakeRefundCommand request, CancellationToken cancellationToken)
         {
             // 1. Validate account

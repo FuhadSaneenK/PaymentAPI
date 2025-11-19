@@ -1,11 +1,16 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PaymentAPI.Application.Commands.Accounts;
+using PaymentAPI.Application.DTOs;
 using PaymentAPI.Application.Queries.Transactions;
+using PaymentAPI.Application.Wrappers;
 
 namespace PaymentAPI.Api.Controllers
 {
+    [Authorize]
+
     [Route("api/[controller]")]
     [ApiController]
     public class AccountController : ControllerBase
@@ -26,12 +31,18 @@ namespace PaymentAPI.Api.Controllers
         }
 
         // GET: api/account/{id}/transactions
+        //[HttpGet("{id}/transactions")]
+        //public async Task<IActionResult> GetTransactionsByAccountId(int id)
+        //{
+        //    var query = new GetTransactionsByAccountIdQuery(id);
+        //    var response = await _mediator.Send(query);
+        //    return StatusCode(response.Status, response);
+        //}
+
         [HttpGet("{id}/transactions")]
-        public async Task<IActionResult> GetTransactionsByAccountId(int id)
+        public async Task<ApiResponse<List<TransactionDto>>> GetTransactionsByAccountId(int id)
         {
-            var query = new GetTransactionsByAccountIdQuery(id);
-            var response = await _mediator.Send(query);
-            return StatusCode(response.Status, response);
+            return await _mediator.Send(new GetTransactionsByAccountIdQuery(id));
         }
     }
 }

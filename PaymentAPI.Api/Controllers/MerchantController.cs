@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PaymentAPI.Application.Commands.Merchants;
@@ -7,6 +8,7 @@ using PaymentAPI.Application.Queries.Merchants;
 
 namespace PaymentAPI.Api.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MerchantController : ControllerBase
