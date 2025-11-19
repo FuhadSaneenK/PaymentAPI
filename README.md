@@ -1,194 +1,221 @@
-# Payment API
-
-A comprehensive RESTful API for managing merchants, accounts, payments, and refunds built with **Clean Architecture** principles using **.NET 8** and **Entity Framework Core**.
+Below is your **cleaned, professional, GitHub-ready** version — no emojis, no icons, no decorations.
+Everything is rewritten in a consistent engineering/documentation standard.
 
 ---
 
-##  Architecture
+# Payment API
 
-This project follows **Clean Architecture** with clear separation of concerns:
+A comprehensive RESTful API for managing merchants, accounts, payments, and refunds, built with **Clean Architecture**, **CQRS**, **.NET 8**, and **Entity Framework Core**.
+
+---
+
+## Architecture
+
+This project implements Clean Architecture with clear separation of concerns.
 
 ```
 PaymentAPI/
-??? PaymentAPI.Api/              # Presentation Layer (Controllers, Middleware)
-??? PaymentAPI.Application/      # Application Layer (CQRS, DTOs, Validators)
-??? PaymentAPI.Domain/          # Domain Layer (Entities, Business Rules)
-??? PaymentAPI.Infrastructure/  # Infrastructure Layer (Database, Services)
-??? PaymentAPI.Tests/           # Unit Tests (45 tests - 100% passing)
+│
+├── PaymentAPI.Api/               # Presentation Layer (Controllers, Middleware)
+├── PaymentAPI.Application/       # Application Layer (CQRS, Handlers, DTOs, Validation)
+├── PaymentAPI.Domain/            # Domain Layer (Entities, Core Rules)
+├── PaymentAPI.Infrastructure/    # Infrastructure Layer (EF Core, Repositories, Services)
+└── PaymentAPI.Tests/             # Unit Tests (45 tests)
 ```
 
 ### Layer Responsibilities
 
-**Domain Layer** (`PaymentAPI.Domain`)
-- Core business entities (Merchant, Account, Transaction, User, PaymentMethod)
-- No external dependencies
-- Pure business logic
+#### Domain Layer (`PaymentAPI.Domain`)
 
-**Application Layer** (`PaymentAPI.Application`)
-- CQRS pattern with MediatR
-- Command/Query handlers
-- DTOs and mapping
-- FluentValidation validators
-- Business orchestration
-- Repository abstractions
+* Core business entities (Merchant, Account, Transaction, User, PaymentMethod)
+* Contains business rules and invariants
+* No external dependencies
+* Pure domain logic
 
-**Infrastructure Layer** (`PaymentAPI.Infrastructure`)
-- Entity Framework Core with PostgreSQL
-- Repository implementations
-- JWT authentication service
-- BCrypt password hashing
-- Database migrations and seeding
+#### Application Layer (`PaymentAPI.Application`)
 
-**Presentation Layer** (`PaymentAPI.Api`)
-- REST API controllers
-- JWT Bearer authentication
-- Swagger/OpenAPI documentation
-- Dependency injection configuration
+* CQRS (Commands, Queries) using MediatR
+* Command and query handlers
+* DTOs and mapping
+* FluentValidation validators
+* Business orchestration
+* Repository abstractions
+
+#### Infrastructure Layer (`PaymentAPI.Infrastructure`)
+
+* Entity Framework Core 9 with PostgreSQL
+* Repository implementations
+* JWT authentication service
+* BCrypt password hashing
+* Database configurations, migrations, and seeding
+
+#### Presentation Layer (`PaymentAPI.Api`)
+
+* REST API controllers
+* JWT authentication
+* Swagger/OpenAPI documentation
+* Dependency injection configuration
 
 ---
 
-##  Features
+## Features
 
-### Authentication & Authorization
-- ? User registration with BCrypt password hashing
-- ? JWT token-based authentication
-- ? Role-based authorization (Admin, User)
-- ? Secure password management
+### Authentication and Authorization
+
+* User registration with BCrypt password hashing
+* JWT token-based authentication
+* Role-based authorization (Admin, User)
+* Secure password storage (never stored in plain text)
 
 ### Merchant Management
-- ? Create merchants with unique email validation
-- ? Retrieve merchant details by ID
-- ? Get comprehensive merchant summary (accounts, balance, transactions)
+
+* Create merchants with unique email validation
+* Retrieve merchant details
+* Merchant summary with accounts, balances, and transactions
 
 ### Account Management
-- ? Create accounts linked to merchants
-- ? Retrieve accounts by merchant ID
-- ? Track account balances
+
+* Create accounts for merchants
+* Retrieve accounts for a specific merchant
+* Balance tracking
 
 ### Transaction Management
-- ? Process payments with reference number tracking
-- ? Process refunds with validation rules
-- ? Retrieve transaction history by account
-- ? Automatic balance updates
-- ? Duplicate reference number prevention
 
-### Validation & Error Handling
-- ? FluentValidation for input validation
-- ? Consistent API response wrapper
-- ? Proper HTTP status codes (200, 201, 400, 404)
-- ? Descriptive error messages
+* Process payments with unique reference numbers
+* Process refunds with strict business rules
+* Retrieve transaction history
+* Automatic account balance updates
+* Duplicate prevention for reference numbers
+
+### Validation and Error Handling
+
+* FluentValidation on all requests
+* Consistent API response model
+* Proper use of HTTP status codes
+* Clear and descriptive error messages
 
 ---
 
-##  Technology Stack
+## Technology Stack
 
 ### Backend Framework
-- **.NET 8** - Latest LTS version
-- **ASP.NET Core Web API** - REST API framework
-- **C# 12** - Modern language features
+
+* ASP.NET Core Web API (REST)
+* .NET 8
+* C# 12
 
 ### Database & ORM
-- **PostgreSQL** - Production database
-- **Entity Framework Core 9.0** - ORM
-- **Npgsql** - PostgreSQL driver
 
-### Design Patterns & Libraries
-- **MediatR** - CQRS implementation
-- **FluentValidation** - Input validation
-- **AutoMapper** (Manual mapping) - DTO mapping
-- **Repository Pattern** - Data access abstraction
-- **Generic Repository** - Reusable data operations
+* PostgreSQL
+* Entity Framework Core 9
+* Npgsql provider
 
-### Authentication & Security
-- **JWT Bearer Tokens** - Stateless authentication
-- **BCrypt.Net-Next** - Password hashing (bcrypt algorithm)
-- **ASP.NET Core Identity** concepts
+### Architecture & Libraries
+
+* MediatR (CQRS + Mediator Pattern)
+* FluentValidation (Input Validation)
+* Repository Pattern + Generic Repository
+* Manual DTO mapping
+
+### Security
+
+* JWT Bearer Authentication
+* BCrypt password hashing
+* Role-based authorization
 
 ### Testing
-- **xUnit** - Testing framework
-- **Moq** - Mocking library
-- **Shouldly** - Fluent assertions
-- **FluentValidation.TestHelper** - Validator testing
+
+* xUnit
+* Moq (Mocking)
+* Shouldly (Assertions)
+* FluentValidation.TestHelper
 
 ### API Documentation
-- **Swashbuckle (Swagger)** - OpenAPI/Swagger UI
-- **Swagger UI** - Interactive API documentation
+
+* Swagger / OpenAPI (Swashbuckle)
 
 ---
 
-##  Database Schema
+## Database Schema
 
-### Entities
+### Merchant
 
-**Merchant**
-- Id (PK)
-- Name
-- Email (Unique)
-- Accounts (Navigation)
+* Id (PK)
+* Name
+* Email (Unique)
+* Accounts (Navigation)
 
-**Account**
-- Id (PK)
-- HolderName
-- Balance
-- MerchantId (FK)
-- Merchant (Navigation)
-- Transactions (Navigation)
+### Account
 
-**Transaction**
-- Id (PK)
-- Amount
-- Type (Payment/Refund)
-- Status (Completed/Pending/Failed)
-- ReferenceNumber (Unique)
-- Date
-- AccountId (FK)
-- PaymentMethodId (FK)
+* Id (PK)
+* HolderName
+* Balance
+* MerchantId (FK)
+* Transactions (Navigation)
 
-**User**
-- Id (PK)
-- Username (Unique)
-- PasswordHash
-- Role (Admin/User)
+### Transaction
 
-**PaymentMethod**
-- Id (PK)
-- Name (Credit Card, Debit Card, etc.)
+* Id (PK)
+* Amount
+* Type (Payment or Refund)
+* Status
+* ReferenceNumber (Unique)
+* Date
+* AccountId (FK)
+* PaymentMethodId (FK)
+
+### User
+
+* Id (PK)
+* Username (Unique)
+* PasswordHash
+* Role
+
+### PaymentMethod
+
+* Id (PK)
+* Name
 
 ---
 
-##  API Endpoints
+## API Endpoints
 
 ### Authentication
-```http
-POST   /api/auth/register          # Register new user
-POST   /api/auth/login             # Login and get JWT token
+
+```
+POST /api/auth/register
+POST /api/auth/login
 ```
 
 ### Merchants
-```http
-POST   /api/merchants              # Create merchant
-GET    /api/merchants/{id}         # Get merchant by ID
-GET    /api/merchants/{id}/summary # Get merchant summary
+
+```
+POST /api/merchants
+GET  /api/merchants/{id}
+GET  /api/merchants/{id}/summary
 ```
 
 ### Accounts
-```http
-POST   /api/accounts               # Create account
-GET    /api/accounts/merchant/{merchantId}  # Get accounts by merchant
+
+```
+POST /api/accounts
+GET  /api/accounts/merchant/{merchantId}
 ```
 
 ### Transactions
-```http
-POST   /api/transactions/payment   # Process payment
-POST   /api/transactions/refund    # Process refund
-GET    /api/transactions/account/{accountId} # Get transactions
+
+```
+POST /api/transactions/payment
+POST /api/transactions/refund
+GET  /api/transactions/account/{accountId}
 ```
 
 ---
 
-##  Configuration
+## Configuration
 
 ### appsettings.json
+
 ```json
 {
   "ConnectionStrings": {
@@ -205,246 +232,195 @@ GET    /api/transactions/account/{accountId} # Get transactions
 
 ---
 
-##  Getting Started
+## Getting Started
 
 ### Prerequisites
-- .NET 8 SDK
-- PostgreSQL 14+
-- Visual Studio 2022 or VS Code
 
-### Installation
+* .NET 8 SDK
+* PostgreSQL 14+
+* Visual Studio 2022 / VS Code
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/FuhadSaneenK/PaymentAPI.git
-cd PaymentAPI
-```
+### Setup Steps
 
-2. **Update database connection string**
-   - Edit `appsettings.json` in `PaymentAPI.Api`
-   - Set your PostgreSQL credentials
+1. Clone the repository:
 
-3. **Run database migrations**
-```bash
-dotnet ef database update --project PaymentAPI.Infrastructure --startup-project PaymentAPI.Api
-```
+   ```bash
+   git clone https://github.com/FuhadSaneenK/PaymentAPI.git
+   cd PaymentAPI
+   ```
 
-4. **Run the application**
-```bash
-cd PaymentAPI.Api
-dotnet run
-```
+2. Update PostgreSQL connection string in `PaymentAPI.Api/appsettings.json`.
 
-5. **Access Swagger UI**
-   - Open browser: `https://localhost:7001/swagger`
+3. Run database migrations:
+
+   ```bash
+   dotnet ef database update --project PaymentAPI.Infrastructure --startup-project PaymentAPI.Api
+   ```
+
+4. Run the API:
+
+   ```bash
+   cd PaymentAPI.Api
+   dotnet run
+   ```
+
+5. Access Swagger:
+
+   ```
+   https://localhost:<port>/swagger
+   ```
 
 ---
 
-##  Testing
+## Testing
 
-### Run All Tests
+### Run all tests
+
 ```bash
 dotnet test PaymentAPI.Tests/PaymentAPI.Tests.csproj
 ```
 
-### Run with Detailed Output
+### Detailed output
+
 ```bash
-dotnet test PaymentAPI.Tests/PaymentAPI.Tests.csproj --logger "console;verbosity=detailed"
+dotnet test PaymentAPI.Tests --logger "console;verbosity=detailed"
 ```
 
-### Test Coverage
-- **Total Tests**: 45
-- **Pass Rate**: 100%
-- **Categories**: Handlers (27), Validators (15), Integration (3)
+### Test Summary
+
+* Total Tests: 45
+* Pass Rate: 100%
+* Categories: Handler tests, Validator tests, Utility tests
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```
 PaymentAPI/
-?
-??? PaymentAPI.Api/
-?   ??? Controllers/
-?   ?   ??? AuthController.cs
-?   ?   ??? MerchantController.cs
-?   ?   ??? AccountController.cs
-?   ?   ??? TransactionController.cs
-?   ??? Program.cs
-?   ??? appsettings.json
-?
-??? PaymentAPI.Application/
-?   ??? Commands/
-?   ?   ??? Auth/
-?   ?   ??? Merchants/
-?   ?   ??? Accounts/
-?   ?   ??? Transactions/
-?   ??? Queries/
-?   ?   ??? Merchants/
-?   ?   ??? Accounts/
-?   ?   ??? Transactions/
-?   ??? Handlers/
-?   ??? DTOs/
-?   ??? Validators/
-?   ??? Behaviors/
-?   ??? Wrappers/
-?
-??? PaymentAPI.Domain/
-?   ??? Entities/
-?       ??? Merchant.cs
-?       ??? Account.cs
-?       ??? Transaction.cs
-?       ??? User.cs
-?       ??? PaymentMethod.cs
-?
-??? PaymentAPI.Infrastructure/
-?   ??? Persistance/
-?   ?   ??? PaymentDbContext.cs
-?   ?   ??? Configurations/
-?   ?   ??? Migrations/
-?   ?   ??? DataSeeder.cs
-?   ??? Repositories/
-?   ??? Services/
-?
-??? PaymentAPI.Tests/
-    ??? Handlers/
-    ??? Validators/
-    ??? Mocks/
+│
+├── PaymentAPI.Api/
+│   ├── Controllers/
+│   ├── Program.cs
+│   └── appsettings.json
+│
+├── PaymentAPI.Application/
+│   ├── Commands/
+│   ├── Queries/
+│   ├── Handlers/
+│   ├── Validators/
+│   ├── DTOs/
+│   ├── Behaviors/
+│   └── Wrappers/
+│
+├── PaymentAPI.Domain/
+│   └── Entities/
+│
+├── PaymentAPI.Infrastructure/
+│   ├── Persistence/
+│   ├── Repositories/
+│   └── Services/
+│
+└── PaymentAPI.Tests/
+    ├── Handlers/
+    ├── Validators/
+    └── Mocks/
 ```
 
 ---
 
-##  Security Features
+## Security Features
 
-1. **Password Security**
-   - BCrypt hashing (salt + hash)
-   - Never stores plain text passwords
-
-2. **JWT Authentication**
-   - Token-based stateless authentication
-   - Configurable expiry
-   - Role-based claims
-
-3. **Input Validation**
-   - FluentValidation on all inputs
-   - Email format validation
-   - Amount and ID validation
-
-4. **Business Rules**
-   - Unique email validation
-   - Unique reference number validation
-   - Refund amount limits
-   - Account ownership verification
+1. BCrypt hashing for passwords
+2. JWT Authentication (stateless)
+3. Role-based access control
+4. FluentValidation for all requests
+5. Unique constraints and business rule validation
+6. Prevention of duplicate reference numbers
+7. Refund validation rules
 
 ---
 
-##  Design Patterns Used
+## Business Rules
 
-1. **CQRS** (Command Query Responsibility Segregation)
-   - Commands for write operations
-   - Queries for read operations
+### Merchant
 
-2. **Repository Pattern**
-   - Abstraction over data access
-   - Generic repository for common operations
+* Email must be unique
+* Name is required
+* Email must be valid
 
-3. **Mediator Pattern**
-   - MediatR for decoupling
-   - Pipeline behaviors for cross-cutting concerns
+### Account
 
-4. **Dependency Injection**
-   - Constructor injection
-   - Interface-based dependencies
+* Must be linked to an existing merchant
+* Holder name required
+* Balance cannot be negative
 
-5. **Unit of Work**
-   - SaveChanges through repository
-   - Transaction management
+### Payments
 
----
+* Amount must be greater than zero
+* Reference number must be unique
+* Account must exist
+* Balance increases
 
-##  Business Rules
+### Refunds
 
-### Merchant Rules
-- ? Email must be unique
-- ? Name is required
-- ? Valid email format
-
-### Account Rules
-- ? Must belong to existing merchant
-- ? Holder name required
-- ? Initial balance ? 0
-
-### Payment Rules
-- ? Amount must be > 0
-- ? Account must exist
-- ? Payment method must exist
-- ? Reference number must be unique
-- ? Balance increases on payment
-
-### Refund Rules
-- ? Amount must be > 0
-- ? Original payment must exist
-- ? Refund amount ? original payment amount
-- ? One refund per reference number
-- ? Refund to same account as payment
-- ? Balance decreases on refund
+* Refund amount must be valid
+* Cannot exceed original payment
+* One refund per reference number
+* Must belong to same account
+* Balance decreases
 
 ---
 
-##  Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a new feature branch
+3. Commit your changes
+4. Push to GitHub
+5. Create a Pull Request
 
 ---
 
-
-
----
-
-## ?? Author
+## Author
 
 **Fuhad Saneen K**
-- GitHub: [@FuhadSaneenK](https://github.com/FuhadSaneenK)
-- Branch: `dev`
+GitHub: [https://github.com/FuhadSaneenK](https://github.com/FuhadSaneenK)
+Branch: `dev`
 
 ---
 
-## ?? Version History
+## Version History
 
-### v1.0.0 (Current)
-- ? Initial release
-- ? Complete CRUD operations
-- ? JWT authentication
-- ? Payment & refund processing
-- ? 45 unit tests (100% passing)
-- ? Clean Architecture implementation
-- ? PostgreSQL integration
+### v1.0.0
 
----
-
-## ?? Future Enhancements
-
-- [ ] Add integration tests
-- [ ] Implement logging (Serilog)
-- [ ] Add API rate limiting
-- [ ] Implement caching (Redis)
-- [ ] Add email notifications
-- [ ] Implement webhook support
-- [ ] Add transaction reports/analytics
-- [ ] Multi-currency support
-- [ ] Batch payment processing
-- [ ] Audit trail implementation
+* Initial release
+* Full CRUD operations
+* Authentication and authorization
+* Payment and refund processing
+* 45 unit tests (100% passing)
+* PostgreSQL integration
+* Full Clean Architecture structure
 
 ---
 
-## ?? Support
+## Future Enhancements
 
-For issues, questions, or contributions, please open an issue on GitHub or contact the maintainer.
+* Integration tests
+* Centralized logging (Serilog)
+* API rate limiting
+* Redis caching
+* Email notifications
+* Webhook support
+* Reporting and analytics
+* Multi-currency support
+* Batch operations
+* Audit tracking
 
 ---
 
-**Built with ?? using Clean Architecture and .NET 8**
+## Support
+
+For issues or questions, please open an issue on GitHub.
+
+
