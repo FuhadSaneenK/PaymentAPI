@@ -1,717 +1,499 @@
-# Payment API - Testing Documentation
-
-## ?? Test Suite Overview
-
-**Total Tests:** 62  
-**Pass Rate:** 100% ?  
-**Test Duration:** ~2.4 seconds  
-**Framework:** xUnit + Moq + Shouldly + FluentValidation.TestHelper
+Below is your **cleaned, professional, GitHub-ready Testing Documentation**.
+No emojis, no icons, no informal indicators — written in a strictly technical and engineering tone.
 
 ---
 
-## ?? Test Categories
+# Payment API – Testing Documentation
 
-### 1. Authentication Tests (15 tests)
-**Location:** `PaymentAPI.Tests\Handlers\Auth\` & `PaymentAPI.Tests\Validators\Auth\`
+## Test Suite Overview
 
-#### LoginUserCommandHandlerTests (3 tests)
-Tests the user login functionality with JWT token generation.
-
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnFail_When_User_NotFound` | User doesn't exist in database | Status 400, "Invalid credentials" |
-| `Should_ReturnFail_When_Password_IsInvalid` | Wrong password provided | Status 400, "Invalid credentials" |
-| `Should_ReturnToken_When_Credentials_AreValid` | Correct username & password | Status 200, JWT token returned |
-
-**Key Validations:**
-- User existence check
-- BCrypt password verification
-- JWT token generation
-- Secure error messages (no user enumeration)
-
-#### RegisterUserCommandHandlerTests (2 tests)
-Tests new user registration with password hashing.
-
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnFail_When_Username_AlreadyExists` | Duplicate username | Status 400, "Username already exists" |
-| `Should_CreateUser_When_Username_IsAvailable` | New unique username | Status 200, User created with hashed password |
-
-**Key Validations:**
-- Username uniqueness
-- Password hashing with BCrypt
-- Database persistence
-- Repository method verification
-
-#### LoginUserValidatorTests (4 tests)
-Tests FluentValidation rules for login commands.
-
-| Test Name | Validation Rule | Error Message |
-|-----------|----------------|---------------|
-| `Should_HaveError_When_Username_IsEmpty` | Username required | "Username is required." |
-| `Should_HaveError_When_Password_IsEmpty` | Password required | "Password is required." |
-| `Should_HaveError_When_Both_Username_And_Password_AreEmpty` | Both required | Both errors shown |
-| `Should_NotHaveError_When_AllFields_AreValid` | All valid | No errors |
-
-#### RegisterUserValidatorTests (8 tests)
-Tests FluentValidation rules for user registration commands.
-
-| Test Name | Validation Rule | Error Message |
-|-----------|----------------|---------------|
-| `Should_HaveError_When_Username_IsEmpty` | Username required | "Username is required." |
-| `Should_HaveError_When_Username_IsTooShort` | Username ? 3 chars | "Username must be at least 3 characters long." |
-| `Should_HaveError_When_Password_IsEmpty` | Password required | "Password is required." |
-| `Should_HaveError_When_Password_IsTooShort` | Password ? 6 chars | "Password must be at least 6 characters long." |
-| `Should_HaveError_When_Both_Username_And_Password_AreEmpty` | Both required | Both errors shown |
-| `Should_NotHaveError_When_AllFields_AreValid` | All valid | No errors |
-| `Should_NotHaveError_When_Username_IsExactlyMinimumLength` | Username = 3 chars | No error for username |
-| `Should_NotHaveError_When_Password_IsExactlyMinimumLength` | Password = 6 chars | No error for password |
-
-**Validation Rules:**
-- Username: Required, minimum 3 characters
-- Password: Required, minimum 6 characters
+**Total Tests:** 62
+**Pass Rate:** 100%
+**Execution Time:** ~2.4 seconds
+**Frameworks Used:** xUnit, Moq, Shouldly, FluentValidation.TestHelper
 
 ---
 
-### 2. Merchant Tests (10 tests)
-**Location:** `PaymentAPI.Tests\Handlers\Merchants\` & `PaymentAPI.Tests\Validators\Merchants\`
+# Test Categories
 
-#### CreateMerchantCommandHandlerTests (2 tests)
-Tests merchant creation with email uniqueness validation.
+## 1. Authentication Tests (15 Tests)
 
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnFail_When_Email_AlreadyExists` | Email already registered | Status 400, Error message |
-| `Should_CreateMerchant_When_Email_IsUnique` | New unique email | Status 201, Merchant DTO returned |
+**Location:**
+`PaymentAPI.Tests/Handlers/Auth/`
+`PaymentAPI.Tests/Validators/Auth/`
 
-**Key Validations:**
-- Email uniqueness check
-- Merchant entity creation
-- DTO mapping
-- Database save verification
+### LoginUserCommandHandlerTests (3 tests)
 
-#### GetMerchantByIdQueryHandlerTests (2 tests)
-Tests retrieving individual merchant details.
+| Test Name                                    | Scenario           | Expected Result       |
+| -------------------------------------------- | ------------------ | --------------------- |
+| Should_ReturnFail_When_User_NotFound         | Username not found | 400 Bad Request       |
+| Should_ReturnFail_When_Password_IsInvalid    | Incorrect password | 400 Bad Request       |
+| Should_ReturnToken_When_Credentials_AreValid | Valid login        | 200 OK with JWT token |
 
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnNotFound_When_Merchant_DoesNotExist` | Invalid merchant ID | Status 404, "Merchant not found" |
-| `Should_ReturnMerchant_When_Merchant_Exists` | Valid merchant ID | Status 200, Complete merchant details |
+**Validations Covered:**
 
-**Key Validations:**
-- Merchant existence check
-- Correct DTO mapping (Id, Name, Email)
-- Proper 404 handling
-
-#### GetMerchantSummaryQueryHandlerTests (3 tests)
-Tests comprehensive merchant summary with aggregated data.
-
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnNotFound_When_Merchant_DoesNotExist` | Invalid merchant ID | Status 404 |
-| `Should_ReturnSummary_When_Merchant_HasNoAccounts` | Merchant with no accounts | Status 200, All totals = 0 |
-| `Should_ReturnSummary_When_Merchant_HasAccountsAndTransactions` | Merchant with data | Status 200, Correct aggregations |
-
-**Key Validations:**
-- Total balance calculation (sum of all account balances)
-- Total holders count
-- Total transactions count
-- Payment vs Refund segregation
-- Multi-account aggregation
-- Cross-repository data joining
-
-**Summary DTO Fields Tested:**
-- MerchantId, MerchantName, Email
-- TotalHolders, TotalBalance
-- TotalTransactions, TotalPayments, TotalRefunds
-
-#### CreateMerchantValidatorTests (4 tests)
-Tests FluentValidation rules for merchant creation.
-
-| Test Name | Validation Rule | Error Message |
-|-----------|----------------|---------------|
-| `Should_HaveError_When_Name_IsEmpty` | Name required | "Merchant name is required." |
-| `Should_HaveError_When_Email_IsEmpty` | Email required | "Email is required." |
-| `Should_HaveError_When_Email_IsInvalidFormat` | Email format | "Invalid email format." |
-| `Should_NotHaveError_When_AllFields_AreValid` | All valid | No errors |
-
-**Validation Rules:**
-- Name: Required
-- Email: Required, valid email format
+* User existence
+* BCrypt password verification
+* JWT generation
+* Avoids user enumeration
 
 ---
 
-### 3. Account Tests (8 tests)
-**Location:** `PaymentAPI.Tests\Handlers\Accounts\` & `PaymentAPI.Tests\Validators\Accounts\`
+### RegisterUserCommandHandlerTests (2 tests)
 
-#### CreateAccountCommandHandlerTests (1 test)
-Tests account creation linked to merchants.
+| Test Name                                     | Scenario           | Expected Result |
+| --------------------------------------------- | ------------------ | --------------- |
+| Should_ReturnFail_When_Username_AlreadyExists | Username taken     | 400 Bad Request |
+| Should_CreateUser_When_Username_IsAvailable   | Valid registration | 200 OK          |
 
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_CreateAccount_When_Valid` | Valid account data | Status 201, Account created |
+**Validations Covered:**
 
-**Key Validations:**
-- Merchant existence verification
-- Account entity creation
-- Initial balance setup
-- DTO mapping
-
-#### GetAccountsByMerchantIdQueryHandlerTests (2 tests)
-Tests retrieving all accounts for a merchant.
-
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnNotFound_When_Merchant_NotFound` | Invalid merchant ID | Status 404 |
-| `Should_Return_Accounts_When_Merchant_Exists` | Valid merchant with accounts | Status 200, List of AccountDTOs |
-
-**Key Validations:**
-- Merchant existence check
-- Account filtering by MerchantId
-- Multiple account handling
-- DTO list mapping
-
-#### CreateAccountValidatorTests (5 tests)
-Tests FluentValidation rules for account creation commands.
-
-| Test Name | Validation Rule | Error Message |
-|-----------|----------------|---------------|
-| `Should_HaveError_When_HolderName_IsEmpty` | HolderName required | "Account holder name is required." |
-| `Should_HaveError_When_Balance_IsNegative` | Balance ? 0 | "Initial balance cannot be negative." |
-| `Should_HaveError_When_MerchantId_IsZero` | MerchantId > 0 | "MerchantId must be valid." |
-| `Should_NotHaveError_When_AllFields_AreValid` | All valid | No errors |
-| `Should_NotHaveError_When_Balance_IsZero` | Balance = 0 | No errors (zero balance allowed) |
-
-**Validation Rules:**
-- HolderName: Required
-- Balance: Must be ? 0 (can be zero)
-- MerchantId: Must be > 0
+* Username uniqueness
+* BCrypt password hashing
+* Correct repository save operations
 
 ---
 
-### 4. Transaction Tests (29 tests)
-**Location:** `PaymentAPI.Tests\Handlers\Transactions\` & `PaymentAPI.Tests\Validators\Transactions\`
+### LoginUserValidatorTests (4 tests)
 
-#### MakePaymentCommandHandlerTests (4 tests)
-Tests payment processing with balance updates.
+| Test Name                                                 | Validation Rule   | Expected        |
+| --------------------------------------------------------- | ----------------- | --------------- |
+| Should_HaveError_When_Username_IsEmpty                    | Username required | Error           |
+| Should_HaveError_When_Password_IsEmpty                    | Password required | Error           |
+| Should_HaveError_When_Both_Username_And_Password_AreEmpty | Both required     | Errors for both |
+| Should_NotHaveError_When_AllFields_AreValid               | Valid             | No errors       |
 
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnNotFound_When_Account_DoesNotExist` | Invalid account | Status 404 |
-| `Should_ReturnNotFound_When_PaymentMethod_DoesNotExist` | Invalid payment method | Status 404 |
-| `Should_ReturnFail_When_ReferenceNo_AlreadyExists` | Duplicate reference | Status 400 |
-| `Should_CreatePayment_When_AllValidations_Pass` | Valid payment | Status 201, Balance increased |
+---
 
-**Key Validations:**
-- Account existence
-- Payment method existence
-- Reference number uniqueness
-- Transaction creation (Type = "Payment", Status = "Completed")
-- Balance increase by payment amount
-- DTO mapping with all fields
+### RegisterUserValidatorTests (8 tests)
+
+| Test Name                                                 | Validation Rule   | Expected  |
+| --------------------------------------------------------- | ----------------- | --------- |
+| Should_HaveError_When_Username_IsEmpty                    | Required          | Error     |
+| Should_HaveError_When_Username_IsTooShort                 | Min length 3      | Error     |
+| Should_HaveError_When_Password_IsEmpty                    | Required          | Error     |
+| Should_HaveError_When_Password_IsTooShort                 | Min length 6      | Error     |
+| Should_HaveError_When_Both_Username_And_Password_AreEmpty | Both required     | Errors    |
+| Should_NotHaveError_When_AllFields_AreValid               | Valid             | No errors |
+| Should_NotHaveError_When_Username_IsExactlyMinimumLength  | Username length 3 | No errors |
+| Should_NotHaveError_When_Password_IsExactlyMinimumLength  | Password length 6 | No errors |
+
+---
+
+## 2. Merchant Tests (10 Tests)
+
+**Location:**
+`PaymentAPI.Tests/Handlers/Merchants/`
+`PaymentAPI.Tests/Validators/Merchants/`
+
+### CreateMerchantCommandHandlerTests (2 tests)
+
+| Test Name                                  | Scenario       | Expected Result |
+| ------------------------------------------ | -------------- | --------------- |
+| Should_ReturnFail_When_Email_AlreadyExists | Email exists   | 400 Bad Request |
+| Should_CreateMerchant_When_Email_IsUnique  | Valid merchant | 201 Created     |
+
+---
+
+### GetMerchantByIdQueryHandlerTests (2 tests)
+
+| Test Name                                        | Scenario   | Expected Result |
+| ------------------------------------------------ | ---------- | --------------- |
+| Should_ReturnNotFound_When_Merchant_DoesNotExist | Invalid ID | 404 Not Found   |
+| Should_ReturnMerchant_When_Merchant_Exists       | Valid ID   | 200 OK          |
+
+---
+
+### GetMerchantSummaryQueryHandlerTests (3 tests)
+
+Covers aggregated merchant metrics.
+
+| Test Name                                                     | Scenario         | Expected Result |
+| ------------------------------------------------------------- | ---------------- | --------------- |
+| Should_ReturnNotFound_When_Merchant_DoesNotExist              | Invalid merchant | 404             |
+| Should_ReturnSummary_When_Merchant_HasNoAccounts              | No accounts      | 200 OK          |
+| Should_ReturnSummary_When_Merchant_HasAccountsAndTransactions | With data        | 200 OK          |
+
+**Validations Covered:**
+
+* Total balance computation
+* Holder count
+* Transaction aggregation
+* Payment vs refund distribution
+
+---
+
+### CreateMerchantValidatorTests (4 tests)
+
+| Test Name                                   | Validation Rule | Expected  |
+| ------------------------------------------- | --------------- | --------- |
+| Should_HaveError_When_Name_IsEmpty          | Name required   | Error     |
+| Should_HaveError_When_Email_IsEmpty         | Email required  | Error     |
+| Should_HaveError_When_Email_IsInvalidFormat | Invalid format  | Error     |
+| Should_NotHaveError_When_AllFields_AreValid | Valid           | No errors |
+
+---
+
+## 3. Account Tests (8 Tests)
+
+**Location:**
+`PaymentAPI.Tests/Handlers/Accounts/`
+`PaymentAPI.Tests/Validators/Accounts/`
+
+### CreateAccountCommandHandlerTests (1 test)
+
+| Test Name                       | Scenario   | Expected Result |
+| ------------------------------- | ---------- | --------------- |
+| Should_CreateAccount_When_Valid | Valid data | 201 Created     |
+
+---
+
+### GetAccountsByMerchantIdQueryHandlerTests (2 tests)
+
+| Test Name                                    | Scenario         | Expected Result |
+| -------------------------------------------- | ---------------- | --------------- |
+| Should_ReturnNotFound_When_Merchant_NotFound | Invalid merchant | 404 Not Found   |
+| Should_Return_Accounts_When_Merchant_Exists  | Valid merchant   | 200 OK          |
+
+---
+
+### CreateAccountValidatorTests (5 tests)
+
+| Test Name                                   | Validation Rule | Expected |
+| ------------------------------------------- | --------------- | -------- |
+| Should_HaveError_When_HolderName_IsEmpty    | Required        | Error    |
+| Should_HaveError_When_Balance_IsNegative    | >= 0            | Error    |
+| Should_HaveError_When_MerchantId_IsZero     | MerchantId > 0  | Error    |
+| Should_NotHaveError_When_AllFields_AreValid | Valid           | No error |
+| Should_NotHaveError_When_Balance_IsZero     | Zero allowed    | No error |
+
+---
+
+## 4. Transaction Tests (29 Tests)
+
+**Location:**
+`PaymentAPI.Tests/Handlers/Transactions/`
+`PaymentAPI.Tests/Validators/Transactions/`
+
+### MakePaymentCommandHandlerTests (4 tests)
+
+| Test Name                                             | Scenario        | Expected |
+| ----------------------------------------------------- | --------------- | -------- |
+| Should_ReturnNotFound_When_Account_DoesNotExist       | Invalid account | 404      |
+| Should_ReturnNotFound_When_PaymentMethod_DoesNotExist | Invalid method  | 404      |
+| Should_ReturnFail_When_ReferenceNo_AlreadyExists      | Duplicate       | 400      |
+| Should_CreatePayment_When_AllValidations_Pass         | Valid payment   | 201      |
 
 **Business Logic Tested:**
-```
-New Balance = Old Balance + Payment Amount
-Transaction Type = "Payment"
-Transaction Status = "Completed"
-```
 
-#### MakeRefundCommandHandlerTests (7 tests)
-Tests refund processing with complex validation rules.
-
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnNotFound_When_Account_DoesNotExist` | Invalid account | Status 404 |
-| `Should_ReturnFail_When_OriginalPayment_NotFound` | No matching payment | Status 400 |
-| `Should_ReturnFail_When_OriginalTransaction_IsNotPayment` | Refund of refund | Status 400 |
-| `Should_ReturnFail_When_RefundAmount_ExceedsOriginalAmount` | Refund > Payment | Status 400 |
-| `Should_ReturnFail_When_Refund_AlreadyExists` | Duplicate refund | Status 400 |
-| `Should_ReturnFail_When_ReferenceNo_BelongsToDifferentAccount` | Wrong account | Status 400 |
-| `Should_CreateRefund_When_AllValidations_Pass` | Valid refund | Status 201, Balance decreased |
-
-**Key Validations:**
-- Original payment existence
-- Payment type verification (must be "Payment")
-- Refund amount ? original amount
-- One refund per reference number
-- Account ownership verification
-- Reference number format (adds "-REF" suffix)
-- Balance decrease by refund amount
-
-**Business Logic Tested:**
-```
-New Balance = Old Balance - Refund Amount
-Refund Amount ? Original Payment Amount
-Transaction Type = "Refund"
-Transaction Status = "Completed"
-Reference Number = Original + "-REF"
-```
-
-#### GetTransactionsByAccountIdQueryHandlerTests (3 tests)
-Tests transaction history retrieval.
-
-| Test Name | Scenario | Expected Result |
-|-----------|----------|-----------------|
-| `Should_ReturnNotFound_When_Account_DoesNotExist` | Invalid account | Status 404 |
-| `Should_ReturnEmptyList_When_Account_HasNoTransactions` | No transactions | Status 200, Empty list |
-| `Should_ReturnTransactions_When_Account_HasTransactions` | Multiple transactions | Status 200, Full list |
-
-**Key Validations:**
-- Account existence check
-- Transaction retrieval by AccountId
-- DTO list mapping
-- Mixed transaction types (Payment + Refund)
-
-#### MakePaymentValidatorTests (6 tests)
-Tests FluentValidation rules for payment commands.
-
-| Test Name | Validation Rule | Error Message |
-|-----------|----------------|---------------|
-| `Should_HaveError_When_Amount_IsZero` | Amount > 0 | "Amount must be greater than zero." |
-| `Should_HaveError_When_Amount_IsNegative` | Amount not negative | Same as above |
-| `Should_HaveError_When_AccountId_IsZero` | AccountId > 0 | "AccountId must be valid." |
-| `Should_HaveError_When_PaymentMethodId_IsZero` | PaymentMethodId > 0 | "PaymentMethodId must be valid." |
-| `Should_HaveError_When_ReferenceNo_IsEmpty` | ReferenceNo required | "Reference number is required." |
-| `Should_NotHaveError_When_AllFields_AreValid` | All valid | No errors |
-
-**Validation Rules:**
-- Amount: Required, must be > 0
-- AccountId: Required, must be > 0
-- PaymentMethodId: Required, must be > 0
-- ReferenceNo: Required
-
-#### MakeRefundValidatorTests (5 tests)
-Tests FluentValidation rules for refund commands.
-
-| Test Name | Validation Rule | Error Message |
-|-----------|----------------|---------------|
-| `Should_HaveError_When_Amount_IsZero` | Amount > 0 | "Refund amount must be greater than zero." |
-| `Should_HaveError_When_Amount_IsNegative` | Amount not negative | Same as above |
-| `Should_HaveError_When_AccountId_IsZero` | AccountId > 0 | "AccountId must be valid." |
-| `Should_HaveError_When_ReferenceNo_IsEmpty` | ReferenceNo required | "Reference number is required to process refund." |
-| `Should_NotHaveError_When_AllFields_AreValid` | All valid | No errors |
-
-**Validation Rules:**
-- Amount: Required, must be > 0
-- AccountId: Required, must be > 0
-- ReferenceNo: Required (for linking to original payment)
+* Balance increases
+* Transaction type = Payment
+* Status = Completed
 
 ---
 
-## ??? Test Infrastructure
+### MakeRefundCommandHandlerTests (7 tests)
 
-### Mocks & Test Doubles
+| Test Name                                                    | Scenario            | Expected |
+| ------------------------------------------------------------ | ------------------- | -------- |
+| Should_ReturnNotFound_When_Account_DoesNotExist              | Invalid account     | 404      |
+| Should_ReturnFail_When_OriginalPayment_NotFound              | No matching payment | 400      |
+| Should_ReturnFail_When_OriginalTransaction_IsNotPayment      | Not payment         | 400      |
+| Should_ReturnFail_When_RefundAmount_ExceedsOriginalAmount    | Amount > payment    | 400      |
+| Should_ReturnFail_When_Refund_AlreadyExists                  | One refund rule     | 400      |
+| Should_ReturnFail_When_ReferenceNo_BelongsToDifferentAccount | Account mismatch    | 400      |
+| Should_CreateRefund_When_AllValidations_Pass                 | Valid refund        | 201      |
 
-#### Service Mocks (2 files)
-**PasswordHasherMock.cs**
+**Business Logic Tested:**
+
+* Balance decreases
+* Refund ≤ original
+* One refund per reference
+* ReferenceNo becomes `REF-XXX-REF`
+
+---
+
+### GetTransactionsByAccountIdQueryHandlerTests (3 tests)
+
+| Test Name                                              | Scenario        | Expected            |
+| ------------------------------------------------------ | --------------- | ------------------- |
+| Should_ReturnNotFound_When_Account_DoesNotExist        | Invalid account | 404                 |
+| Should_ReturnEmptyList_When_Account_HasNoTransactions  | No transactions | 200 OK (empty list) |
+| Should_ReturnTransactions_When_Account_HasTransactions | Has data        | 200 OK              |
+
+---
+
+### MakePaymentValidatorTests (6 tests)
+
+### MakeRefundValidatorTests (5 tests)
+
+Fully validate all payment/refund command rules.
+
+---
+
+# Test Infrastructure
+
+## Service Mocks
+
+### PasswordHasherMock.cs
+
+Simulates BCrypt:
+
 ```csharp
-// Simulates BCrypt hashing
-Hash(password) => "HASHED_" + password
-Verify(password, hash) => hash == "HASHED_" + password
+Hash(password) => "HASHED_" + password;
+Verify(password, hash) => hash == "HASHED_" + password;
 ```
 
-**JwtServiceMock.cs**
+### JwtServiceMock.cs
+
+Simulates JWT:
+
 ```csharp
-// Simulates JWT token generation
-GenerateToken(userId, username, role) => "fake.jwt.token.{userId}.{username}.{role}"
+GenerateToken(userId, username, role)
+    => $"fake.jwt.token.{userId}.{username}.{role}";
 ```
 
-#### Repository Mocks (5 files)
-- `MerchantRepositoryMock` - Mock IMerchantRepository
-- `AccountRepositoryMock` - Mock IAccountRepository
-- `TransactionRepositoryMock` - Mock ITransactionRepository
-- `PaymentMethodRepositoryMock` - Mock IPaymentMethodRepository
-- `UserRepositoryMock` - Mock IUserRepository
+---
 
-**Pattern:**
+## Repository Mocks
+
+Includes mocks for:
+
+* MerchantRepository
+* AccountRepository
+* TransactionRepository
+* PaymentMethodRepository
+* UserRepository
+
+Pattern:
+
 ```csharp
 public static Mock<IRepository> Get() => new Mock<IRepository>();
 ```
 
-#### Entity Mocks (5 files)
-- `MerchantMock` - Creates test Merchant entities
-- `AccountMock` - Creates test Account entities
-- `TransactionMock` - Creates test Transaction entities (Payment/Refund/Generic)
-- `PaymentMethodMock` - Creates test PaymentMethod entities
-- `UserMock` - Creates test User entities
+---
+
+## Entity Mocks
+
+Provides reusable domain models for:
+
+* Merchant
+* Account
+* Transaction
+* PaymentMethod
+* User
 
 ---
 
-## ?? Test Patterns & Best Practices
+# Test Patterns & Practices
 
-### AAA Pattern (Arrange-Act-Assert)
-All tests follow the structured AAA pattern:
+## AAA Structure
 
-```csharp
-[Fact]
-public async Task Should_DoSomething_When_Condition()
-{
-    // Arrange - Setup test data and mocks
-    var repository = RepositoryMock.Get();
-    var handler = new Handler(repository.Object);
-    
-    // Act - Execute the method under test
-    var result = await handler.Handle(command, ct);
-    
-    // Assert - Verify expected outcomes
-    result.Status.ShouldBe(200);
-    result.Data.ShouldNotBeNull();
-}
+All tests follow:
+
+```
+Arrange
+Act
+Assert
 ```
 
-### Naming Convention
-**Format:** `Should_{ExpectedBehavior}_When_{Condition}`
+## Naming Convention
 
-**Examples:**
-- `Should_ReturnNotFound_When_Merchant_DoesNotExist`
-- `Should_CreatePayment_When_AllValidations_Pass`
-- `Should_HaveError_When_Amount_IsZero`
+```
+Should_{ExpectedResult}_When_{Condition}
+```
 
-### Isolation Principle
-- Each test is completely independent
-- No shared state between tests
-- Fresh mocks for each test
-- CancellationToken.None for consistency
+## Isolation Rules
 
-### Mock Verification
-Tests verify that repository methods are called correctly:
+* No shared state
+* New mocks for each test
+* CancellationToken.None for consistency
+
+## Mock Verification Example
 
 ```csharp
-// Verify AddAsync was called with correct entity
-merchantRepo.Verify(x => x.AddAsync(
-    It.Is<Merchant>(m => m.Name == "Test" && m.Email == "test@test.com"), 
-    _ct), 
-    Times.Once);
-
-// Verify SaveChanges was called
 merchantRepo.Verify(x => x.SaveChangesAsync(_ct), Times.Once);
 ```
 
-### Assertion Library (Shouldly)
-Uses fluent, readable assertions:
+## Shouldly Assertions
 
 ```csharp
 result.Status.ShouldBe(200);
 result.Data.ShouldNotBeNull();
-result.Message.ShouldContain("success");
-list.Count.ShouldBe(3);
 ```
 
-### Validator Testing (FluentValidation.TestHelper)
-Uses built-in test helpers:
+## Validator Testing
 
 ```csharp
 var result = _validator.TestValidate(command);
-
-// Assert error
-result.ShouldHaveValidationErrorFor(x => x.Email)
-      .WithErrorMessage("Email is required.");
-
-// Assert no errors
-result.ShouldNotHaveAnyValidationErrors();
+result.ShouldHaveValidationErrorFor(x => x.Email);
 ```
 
 ---
 
-## ?? Code Coverage Summary
+# Coverage Summary
 
-### Handlers Coverage: ~95%+
-? All command handlers tested (8 handlers)  
-? All query handlers tested (5 handlers)  
-? Success scenarios covered  
-? Error scenarios covered  
-? Edge cases covered  
+### Handler Coverage: ~95%+
 
-### Validators Coverage: 100%
-? All 6 validators tested  
-? Required field validation  
-? Format validation (email)  
-? Range validation (amount > 0, length requirements)  
-? Business rule validation  
+Covers all:
+
+* Command handlers
+* Query handlers
+* Success and failure flows
+* Edge cases
+
+### Validator Coverage: 100%
+
+Covers:
+
+* All 6 validators
+* Required rules
+* Range rules
+* Format rules
+* Cross-field logic
 
 ### Business Logic Coverage: ~95%
-? Balance calculations  
-? Reference number uniqueness  
-? Refund business rules  
-? Account ownership verification  
-? Transaction type handling  
-? Password hashing and verification  
-? JWT token generation  
+
+Includes:
+
+* Balance updates
+* Refund rules
+* Reference number uniqueness
+* Ownership validation
+* Password + JWT logic
 
 ---
 
-## ?? Test Breakdown by Category
+# Test Distribution Summary
 
-### Test Distribution
-
-| Category | Handler Tests | Validator Tests | Total |
-|----------|---------------|-----------------|-------|
-| **Authentication** | 5 | 12 | 15 |
-| **Merchants** | 6 | 4 | 10 |
-| **Accounts** | 3 | 5 | 8 |
-| **Transactions** | 14 | 11 | 29 |
-| **TOTAL** | **30** | **32** | **62** |
-
-### Validators Tested
-
-| Validator | Test Count | Coverage |
-|-----------|-----------|----------|
-| LoginUserValidator | 4 | 100% |
-| RegisterUserValidator | 8 | 100% |
-| CreateMerchantValidator | 4 | 100% |
-| CreateAccountValidator | 5 | 100% |
-| MakePaymentValidator | 6 | 100% |
-| MakeRefundValidator | 5 | 100% |
-
-### Command Handlers Tested
-
-| Handler | Test Count | Coverage |
-|---------|-----------|----------|
-| LoginUserCommandHandler | 3 | 100% |
-| RegisterUserCommandHandler | 2 | 100% |
-| CreateMerchantCommandHandler | 2 | 100% |
-| CreateAccountCommandHandler | 1 | 100% |
-| MakePaymentCommandHandler | 4 | 100% |
-| MakeRefundCommandHandler | 7 | 100% |
-
-### Query Handlers Tested
-
-| Handler | Test Count | Coverage |
-|---------|-----------|----------|
-| GetMerchantByIdQueryHandler | 2 | 100% |
-| GetMerchantSummaryQueryHandler | 3 | 100% |
-| GetAccountsByMerchantIdQueryHandler | 2 | 100% |
-| GetTransactionsByAccountIdQueryHandler | 3 | 100% |
+| Category       | Handler Tests | Validator Tests | Total  |
+| -------------- | ------------- | --------------- | ------ |
+| Authentication | 5             | 12              | 15     |
+| Merchants      | 6             | 4               | 10     |
+| Accounts       | 3             | 5               | 8      |
+| Transactions   | 14            | 11              | 29     |
+| **Total**      | **30**        | **32**          | **62** |
 
 ---
 
-## ?? Running Tests
+# Running Tests
 
-### Run All Tests
+### Standard Run
+
 ```bash
 dotnet test
 ```
 
-**Expected Output:**
-```
-Test summary: total: 62, failed: 0, succeeded: 62, skipped: 0
-```
+### Detailed Output
 
-### Run with Detailed Output
 ```bash
 dotnet test --logger "console;verbosity=detailed"
 ```
 
-### Run Specific Test Class
+### Run a Specific Class
+
 ```bash
-dotnet test --filter "FullyQualifiedName~MakePaymentCommandHandlerTests"
-dotnet test --filter "FullyQualifiedName~RegisterUserValidatorTests"
+dotnet test --filter "MakePaymentCommandHandlerTests"
 ```
 
-### Run Tests by Category
+### Run by Category
+
 ```bash
-# Run all handler tests
-dotnet test --filter "FullyQualifiedName~Handlers"
-
-# Run all validator tests
 dotnet test --filter "FullyQualifiedName~Validators"
-
-# Run all auth tests
-dotnet test --filter "FullyQualifiedName~Auth"
-
-# Run all transaction tests
 dotnet test --filter "FullyQualifiedName~Transactions"
 ```
 
-### Generate Code Coverage Report
+### Coverage Report
+
 ```bash
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
 ```
 
 ---
 
-## ?? Test Metrics
+# Test Metrics
 
-| Metric | Value |
-|--------|-------|
-| **Total Tests** | **62** |
-| **Passed** | **62 (100%)** ? |
-| **Failed** | **0** |
-| **Skipped** | **0** |
-| **Duration** | **~2.4 seconds** |
-| **Handlers Tested** | **13 handlers** |
-| **Validators Tested** | **6 validators** |
-| **Commands Tested** | **6 commands** |
-| **Queries Tested** | **4 queries** |
-| **Mock Objects** | **7 types** |
-| **Entity Mocks** | **5 types** |
-
----
-
-## ?? Test Quality Indicators
-
-### ? Strengths
-1. **Comprehensive Coverage** - All critical paths tested
-2. **Clear Naming** - Self-documenting test names
-3. **Good Structure** - Consistent AAA pattern
-4. **Isolated Tests** - No dependencies between tests
-5. **Fast Execution** - All tests run in ~2.4 seconds
-6. **Mock Verification** - Repository calls verified
-7. **Business Rules** - Complex refund logic covered
-8. **Validator Coverage** - 100% validation rule coverage
-9. **Edge Cases** - Boundary conditions tested
-
-### ?? Test Characteristics
-- **Deterministic** - Tests always produce same results
-- **Repeatable** - Can run multiple times
-- **Independent** - Tests don't affect each other
-- **Fast** - Quick feedback loop
-- **Maintainable** - Easy to update when code changes
-- **Readable** - Clear intent and assertions
+| Metric            | Value |
+| ----------------- | ----- |
+| Total Tests       | 62    |
+| Passed            | 62    |
+| Failed            | 0     |
+| Skipped           | 0     |
+| Execution Time    | ~2.4s |
+| Handlers Tested   | 13    |
+| Validators Tested | 6     |
+| Command Tests     | 6     |
+| Query Tests       | 4     |
+| Mock Types        | 7     |
+| Entity Mocks      | 5     |
 
 ---
 
-## ?? Test Documentation Standards
+# Test Quality Indicators
 
-### Test Method Documentation
-```csharp
-// Test name explains: WHAT should happen WHEN condition occurs
-[Fact]
-public async Task Should_ReturnNotFound_When_Merchant_DoesNotExist()
-{
-    // Arrange section: Comments explain test setup
-    // Act section: Single method call being tested
-    // Assert section: Multiple assertions with clear expectations
-}
-```
+## Strengths
 
-### Assertion Documentation
-```csharp
-// Assert
-result.Status.ShouldBe(404);              // HTTP status code
-result.Message.ShouldBe("Merchant not found"); // Error message
-result.Data.ShouldBeNull();               // No data returned
+* Comprehensive test coverage
+* Consistent naming and structure
+* Independent and deterministic tests
+* Full business rule validation
+* Fast execution
+* Strong validation coverage
 
-// Verify repository interaction
-merchantRepo.Verify(x => x.AddAsync(...), Times.Once);
-```
+## Characteristics
+
+* Repeatable
+* Maintainable
+* Readable
+* Accurate and strict assertions
 
 ---
 
-## ?? Future Test Enhancements
+# Future Test Enhancements
 
-### Planned Improvements
-- [ ] Add integration tests with test database
-- [ ] Add performance/load tests
-- [ ] Add mutation testing
-- [ ] Add API endpoint integration tests
-- [ ] Add database migration tests
-- [ ] Add concurrent transaction tests
-- [ ] Add security/penetration tests
-- [ ] Add error handling edge cases
-- [ ] Add localization tests for error messages
-
-### Test Coverage Goals
-- [ ] Achieve 95%+ line coverage
-- [ ] Achieve 90%+ branch coverage
-- [ ] Add tests for exception scenarios
-- [ ] Add tests for concurrent operations
-- [ ] Add tests for transaction rollback scenarios
+* Integration tests with a test database
+* Load/performance tests
+* Mutation testing for robustness
+* API-level integration tests
+* Migration tests
+* Concurrent transaction simulations
+* Security-focused testing (JWT tampering, invalid tokens)
+* Additional edge case coverage
 
 ---
 
-## ?? Testing Support
+# Testing Support
 
-For questions about tests or to report test failures:
+If test failures occur:
+
 1. Check test output logs
 2. Review mock setups
-3. Verify database state
-4. Check test data assumptions
-5. Open GitHub issue if bug found
-
-### Test Failure Troubleshooting
-
-**Common Issues:**
-1. **Mock not setup** - Verify mock expectations match actual calls
-2. **Async timing** - Ensure proper async/await usage
-3. **State pollution** - Check for shared state between tests
-4. **Assertion precision** - Verify exact error messages and status codes
+3. Validate expected repository interactions
+4. Inspect test data consistency
+5. Check exception and validator messages
+6. Open a GitHub issue if needed
 
 ---
 
-## ?? Test Examples
+# Maintainer
 
-### Example: Handler Test
-```csharp
-[Fact]
-public async Task Should_CreatePayment_When_AllValidations_Pass()
-{
-    // Arrange
-    var accountRepo = AccountRepositoryMock.Get();
-    var paymentMethodRepo = PaymentMethodRepositoryMock.Get();
-    var transactionRepo = TransactionRepositoryMock.Get();
-    
-    var account = AccountMock.GetAccount(1, "Test", 1000m, 1);
-    var paymentMethod = PaymentMethodMock.GetPaymentMethod(1, "Credit Card");
-    
-    accountRepo.Setup(x => x.GetByIdAsync(1, _ct)).ReturnsAsync(account);
-    paymentMethodRepo.Setup(x => x.GetByIdAsync(1, _ct)).ReturnsAsync(paymentMethod);
-    transactionRepo.Setup(x => x.GetByReferenceNoAsync("REF001", _ct)).ReturnsAsync((Transaction)null);
-    
-    var handler = new MakePaymentCommandHandler(accountRepo.Object, paymentMethodRepo.Object, transactionRepo.Object);
-    var command = new MakePaymentCommand { Amount = 100, AccountId = 1, PaymentMethodId = 1, ReferenceNo = "REF001" };
-    
-    // Act
-    var result = await handler.Handle(command, _ct);
-    
-    // Assert
-    result.Status.ShouldBe(201);
-    result.Data.Amount.ShouldBe(100);
-    account.Balance.ShouldBe(1100);
-}
-```
-
-### Example: Validator Test
-```csharp
-[Fact]
-public void Should_HaveError_When_Amount_IsZero()
-{
-    // Arrange
-    var command = new MakePaymentCommand { Amount = 0, AccountId = 1, PaymentMethodId = 1, ReferenceNo = "REF001" };
-    
-    // Act
-    var result = _validator.TestValidate(command);
-    
-    // Assert
-    result.ShouldHaveValidationErrorFor(x => x.Amount)
-          .WithErrorMessage("Amount must be greater than zero.");
-}
-```
+**Fuhad Saneen K**
+Last Updated: December 2024
+Framework Versions: xUnit 2.5.3, Moq 4.20.72, Shouldly 4.3.0, FluentValidation.TestHelper 11.11.0
 
 ---
 
-**Test Suite Maintained By:** Fuhad Saneen K  
-**Last Updated:** December 2024  
-**Framework Versions:** 
-- xUnit 2.5.3
-- Moq 4.20.72
-- Shouldly 4.3.0
-- FluentValidation.TestHelper 11.11.0
-
----
-
-## ?? Test Success Summary
+# Test Summary
 
 ```
-? 62 Tests Executed
-? 62 Tests Passed (100%)
-? 0 Tests Failed
-? 0 Tests Skipped
-? ~2.4 seconds execution time
-? All handlers covered
-? All validators covered
-? All business rules validated
+62 Tests Executed
+62 Tests Passed (100%)
+0 Failed
+0 Skipped
+Execution Time: ~2.4 seconds
+All Command & Query Handlers Covered
+All Validators Covered
+All Major Business Rules Validated
 ```
 
-**Status: All Tests Green! ??**
+
