@@ -11,132 +11,171 @@ using PaymentAPI.Infrastructure.Persistance;
 using PaymentAPI.Infrastructure.Repositories;
 using PaymentAPI.Infrastructure.Services;
 using System.Text;
-
-
-var builder = WebApplication.CreateBuilder(args);
+using Serilog;
 
 // ----------------------------
-// Add services
+// Configure Serilog (Early Initialization)
 // ----------------------------
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json")
+        .Build())
+    .CreateLogger();
 
-// MediatR
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(CreateMerchantCommand).Assembly));
+try
+{
+    Log.Information("Starting PaymentAPI application...");
 
-// FluentValidation
-builder.Services.AddValidatorsFromAssembly(typeof(CreateMerchantCommand).Assembly);
+    var builder = WebApplication.CreateBuilder(args);
 
-// Pipeline
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+    // Replace default logging with Serilog
+    builder.Host.UseSerilog();
 
-// DbContext
-builder.Services.AddDbContext<PaymentDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // ----------------------------
+    // Add services
+    // ----------------------------
 
-// Repositories
-builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
-builder.Services.AddScoped<IAccountRepository, AccountRepository>();
-builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+    // MediatR
+    builder.Services.AddMediatR(cfg =>
+        cfg.RegisterServicesFromAssembly(typeof(CreateMerchantCommand).Assembly));
 
-// Services
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<IJwtService, JwtService>();
+    // FluentValidation
+    builder.Services.AddValidatorsFromAssembly(typeof(CreateMerchantCommand).Assembly);
 
-builder.Services.AddControllers();
+    // Pipeline
+    builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+    builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 
-// ----------------------------
-// JWT Authentication
-// ----------------------------
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
+    // DbContext
+    builder.Services.AddDbContext<PaymentDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    // Repositories
+    builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
+    builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+    builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+    builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+    // Services
+    builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+    builder.Services.AddScoped<IJwtService, JwtService>();
+
+    builder.Services.AddControllers();
+
+    // ----------------------------
+    // JWT Authentication
+    // ----------------------------
+    builder.Services.AddAuthentication("Bearer")
+        .AddJwtBearer("Bearer", options =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            };
+        });
+
+    builder.Services.AddAuthorization();
+
+    // ----------------------------
+    // Swagger with JWT
+    // ----------------------------
+    builder.Services.AddEndpointsApiExplorer();
+
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "PaymentAPI",
+            Version = "v1"
+        });
+
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter: Bearer {token}"
+        });
+
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                new string[] {}
+            }
+        });
+    });
+
+    var app = builder.Build();
+
+    // Add Serilog request logging middleware
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
+        options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+        {
+            diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+            diagnosticContext.Set("UserAgent", httpContext.Request.Headers["User-Agent"].ToString());
         };
     });
 
-builder.Services.AddAuthorization();
-
-// ----------------------------
-// Swagger with JWT
-// ----------------------------
-builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
+    // Seed Database
+    using (var scope = app.Services.CreateScope())
     {
-        Title = "PaymentAPI",
-        Version = "v1"
-    });
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter: Bearer {token}"
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        var services = scope.ServiceProvider;
+        try
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] {}
+            var context = services.GetRequiredService<PaymentDbContext>();
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            await DataSeeder.SeedAsync(context, logger);
         }
-    });
-});
-
-var app = builder.Build();
-
-// Seed Database
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<PaymentDbContext>();
-        await DataSeeder.SeedAsync(context);
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred while seeding the database");
+        }
     }
-    catch (Exception ex)
+
+    // ----------------------------
+    // Middleware
+    // ----------------------------
+    if (app.Environment.IsDevelopment())
     {
-        Console.WriteLine($"Error seeding data: {ex.Message}");
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
-}
 
-// ----------------------------
-// Middleware
-// ----------------------------
-if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    Log.Information("PaymentAPI started successfully");
+    app.Run();
+}
+catch (Exception ex)
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Fatal(ex, "Application failed to start");
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+finally
+{
+    Log.CloseAndFlush();
+}

@@ -1,10 +1,5 @@
 ﻿using FluentValidation;
 using PaymentAPI.Application.Commands.Transactions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Validators.Transactions
 {

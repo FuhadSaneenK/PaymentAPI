@@ -1,18 +1,12 @@
 ﻿using Moq;
 using PaymentAPI.Application.Abstractions.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace PaymentAPI.Tests.Mocks
+namespace PaymentAPI.Tests.Mocks;
+
+public static class TransactionRepositoryMock
 {
-    public static class TransactionRepositoryMock
+    public static Mock<ITransactionRepository> Get()
     {
-        public static Mock<ITransactionRepository> Get()
-        {
-            return new Mock<ITransactionRepository>();
-        }
+        return new Mock<ITransactionRepository>();
     }
 }

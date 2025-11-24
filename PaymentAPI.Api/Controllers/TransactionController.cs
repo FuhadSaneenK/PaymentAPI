@@ -1,37 +1,141 @@
-﻿
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using PaymentAPI.Application.Commands.Transactions;
 
-namespace PaymentAPI.Api.Controllers
+namespace PaymentAPI.Api.Controllers;
+
+/// <summary>
+/// Controller for processing payment transactions and refunds.
+/// </summary>
+/// <remarks>
+/// Provides endpoints for payment processing and refund operations with strict business rule validation.
+/// Requires JWT authentication. All transactions update account balances automatically.
+/// </remarks>
+[Authorize]
+public class TransactionController : BaseApiController
 {
-    [Authorize]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class TransactionController : ControllerBase
+    private readonly ILogger<TransactionController> _logger;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TransactionController"/> class.
+    /// </summary>
+    /// <param name="mediator">The MediatR instance.</param>
+    /// <param name="logger">The logger instance.</param>
+    public TransactionController(IMediator mediator, ILogger<TransactionController> logger) : base(mediator)
     {
-        private readonly IMediator _mediator;
-        public TransactionController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
+        _logger = logger;
+    }
 
-        // POST: /api/transaction/payment
-        [HttpPost("payment")]
-        public async Task<IActionResult> MakePayment([FromBody] MakePaymentCommand command)
+    /// <summary>
+    /// Processes a payment transaction.
+    /// </summary>
+    /// <param name="command">The payment command containing amount, account ID, payment method ID, and reference number.</param>
+    /// <returns>
+    /// Returns 201 Created with transaction details if payment is processed successfully,
+    /// or 400 Bad Request if validation fails or reference number already exists,
+    /// or 404 Not Found if account or payment method doesn't exist.
+    /// </returns>
+    /// <response code="201">Payment processed successfully, account balance increased.</response>
+    /// <response code="400">Validation failed or duplicate reference number.</response>
+    /// <response code="404">Account or payment method not found.</response>
+    /// <response code="401">Unauthorized - JWT token required.</response>
+    /// <remarks>
+    /// Business Rules:
+    /// - Amount must be greater than zero
+    /// - Reference number must be unique
+    /// - Account and payment method must exist
+    /// - Account balance increases by payment amount
+    /// - Transaction type set to "Payment"
+    /// - Transaction status set to "Completed"
+    /// </remarks>
+    /// <example>
+    /// POST /api/transaction/payment
+    /// {
+    ///   "amount": 500.00,
+    ///   "accountId": 1,
+    ///   "paymentMethodId": 1,
+    ///   "referenceNo": "REF-12345"
+    /// }
+    /// </example>
+    [HttpPost("payment")]
+    public async Task<IActionResult> MakePayment([FromBody] MakePaymentCommand command)
+    {
+        _logger.LogInformation("Payment request received - AccountId: {AccountId}, Amount: {Amount}, PaymentMethodId: {PaymentMethodId}, Reference: {ReferenceNo}",
+            command.AccountId, command.Amount, command.PaymentMethodId, command.ReferenceNo);
+        
+        var response = await _mediator.Send(command);
+        
+        if (response.IsSuccess)
         {
-            var response = await _mediator.Send(command);
-            return StatusCode(response.Status, response);
+            _logger.LogInformation("Payment processed successfully - AccountId: {AccountId}, Amount: {Amount}, Reference: {ReferenceNo}",
+                command.AccountId, command.Amount, command.ReferenceNo);
         }
+        else
+        {
+            _logger.LogWarning("Payment failed - AccountId: {AccountId}, Amount: {Amount}, Reason: {Message}",
+                command.AccountId, command.Amount, response.Message);
+        }
+        
+        return StatusCode(response.Status, response);
+    }
 
-        // POST: /api/transaction/refund
-        [HttpPost("refund")]
-        public async Task<IActionResult> MakeRefund([FromBody] MakeRefundCommand command)
+    /// <summary>
+    /// Processes a refund transaction with strict validation.
+    /// </summary>
+    /// <param name="command">The refund command containing amount, account ID, and original payment reference number.</param>
+    /// <returns>
+    /// Returns 201 Created with refund transaction details if processed successfully,
+    /// or 400 Bad Request if validation fails or business rules are violated,
+    /// or 404 Not Found if account or original payment doesn't exist.
+    /// </returns>
+    /// <response code="201">Refund processed successfully, account balance decreased.</response>
+    /// <response code="400">Validation failed or business rule violation.</response>
+    /// <response code="404">Account or original payment not found.</response>
+    /// <response code="401">Unauthorized - JWT token required.</response>
+    /// <remarks>
+    /// Business Rules:
+    /// - Amount must be greater than zero
+    /// - Original payment must exist with the provided reference number
+    /// - Original transaction must be of type "Payment" (cannot refund a refund)
+    /// - Refund amount cannot exceed original payment amount
+    /// - Only one refund allowed per payment reference
+    /// - Reference number must belong to the same account
+    /// - Account balance decreases by refund amount
+    /// - New reference number format: {OriginalRef}-REF
+    /// - Transaction type set to "Refund"
+    /// - Transaction status set to "Completed"
+    /// </remarks>
+    /// <example>
+    /// POST /api/transaction/refund
+    /// {
+    ///   "amount": 200.00,
+    ///   "accountId": 1,
+    ///   "referenceNo": "REF-12345"
+    /// }
+    /// 
+    /// This will create a refund with reference "REF-12345-REF"
+    /// </example>
+    [HttpPost("refund")]
+    public async Task<IActionResult> MakeRefund([FromBody] MakeRefundCommand command)
+    {
+        _logger.LogInformation("Refund request received - AccountId: {AccountId}, Amount: {Amount}, Reference: {ReferenceNo}",
+            command.AccountId, command.Amount, command.ReferenceNo);
+        
+        var response = await _mediator.Send(command);
+        
+        if (response.IsSuccess)
         {
-            var response = await _mediator.Send(command);
-            return StatusCode(response.Status, response);
+            _logger.LogInformation("Refund processed successfully - AccountId: {AccountId}, Amount: {Amount}, Reference: {ReferenceNo}",
+                command.AccountId, command.Amount, command.ReferenceNo);
         }
+        else
+        {
+            _logger.LogWarning("Refund failed - AccountId: {AccountId}, Amount: {Amount}, Reason: {Message}",
+                command.AccountId, command.Amount, response.Message);
+        }
+        
+        return StatusCode(response.Status, response);
     }
 }

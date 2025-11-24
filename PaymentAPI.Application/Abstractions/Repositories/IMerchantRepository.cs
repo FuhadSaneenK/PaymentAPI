@@ -1,9 +1,4 @@
 ﻿using PaymentAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Abstractions.Repositories
 {
@@ -20,6 +15,5 @@ namespace PaymentAPI.Application.Abstractions.Repositories
         /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
         /// <returns>The merchant if found; otherwise, null.</returns>
         Task<Merchant?> GetByEmailAsync(string email, CancellationToken cancellationToken);
-
     }
 }

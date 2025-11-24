@@ -1,14 +1,10 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using PaymentAPI.Application.Abstractions.Repositories;
 using PaymentAPI.Application.Commands.Accounts;
 using PaymentAPI.Application.DTOs;
 using PaymentAPI.Application.Wrappers;
 using PaymentAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Handlers.Accounts
 {
@@ -20,16 +16,22 @@ namespace PaymentAPI.Application.Handlers.Accounts
     {
         private readonly IAccountRepository _accountRepository;
         private readonly IMerchantRepository _merchantRepository;
+        private readonly ILogger<CreateAccountCommandHandler> _logger;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateAccountCommandHandler"/> class.
         /// </summary>
         /// <param name="accountRepository">The repository for account data access.</param>
         /// <param name="merchantRepository">The repository for merchant data access.</param>
-        public CreateAccountCommandHandler(IAccountRepository accountRepository,IMerchantRepository merchantRepository)
+        /// <param name="logger">Logger instance.</param>
+        public CreateAccountCommandHandler(
+            IAccountRepository accountRepository,
+            IMerchantRepository merchantRepository,
+            ILogger<CreateAccountCommandHandler> logger)
         {
             _accountRepository = accountRepository;
             _merchantRepository = merchantRepository;
+            _logger = logger;
         }
 
 
@@ -51,34 +53,52 @@ namespace PaymentAPI.Application.Handlers.Accounts
         /// </remarks>
         public async Task<ApiResponse<AccountDto>> Handle(CreateAccountCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Creating account - HolderName: {HolderName}, MerchantId: {MerchantId}, InitialBalance: {Balance}",
+                request.HolderName, request.MerchantId, request.Balance);
+
             // 1. Check if Merchant exists
             var merchant = await _merchantRepository.GetByIdAsync(request.MerchantId, cancellationToken);
             if (merchant == null)
             {
+                _logger.LogWarning("Account creation failed: Merchant not found - MerchantId: {MerchantId}", request.MerchantId);
                 return ApiResponse<AccountDto>.NotFound("Merchant not found");
             }
-            // 2. Create Account
-            var account = new Account
-            {
-                HolderName = request.HolderName,
-                Balance = request.Balance,
-                MerchantId = request.MerchantId
-            };
-            // 3. Add to DB
-            await _accountRepository.AddAsync(account, cancellationToken);
 
-            // 4. Save
-            await _accountRepository.SaveChangesAsync(cancellationToken);
-            // 5. Convert to DTO
-            var dto = new AccountDto
+            try
             {
-                Id = account.Id,
-                HolderName = account.HolderName,
-                Balance = account.Balance,
-                MerchantId = account.MerchantId
-            };
-            // 6. Return response
-            return ApiResponse<AccountDto>.Created(dto, "Account created successfully");
+                // 2. Create Account
+                var account = new Account
+                {
+                    HolderName = request.HolderName,
+                    Balance = request.Balance,
+                    MerchantId = request.MerchantId
+                };
+                // 3. Add to DB
+                await _accountRepository.AddAsync(account, cancellationToken);
+
+                // 4. Save
+                await _accountRepository.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation("Account created successfully - AccountId: {AccountId}, HolderName: {HolderName}, MerchantId: {MerchantId}",
+                    account.Id, account.HolderName, account.MerchantId);
+
+                // 5. Convert to DTO
+                var dto = new AccountDto
+                {
+                    Id = account.Id,
+                    HolderName = account.HolderName,
+                    Balance = account.Balance,
+                    MerchantId = account.MerchantId
+                };
+                // 6. Return response
+                return ApiResponse<AccountDto>.Created(dto, "Account created successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating account - HolderName: {HolderName}, MerchantId: {MerchantId}",
+                    request.HolderName, request.MerchantId);
+                throw;
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using PaymentAPI.Application.Abstractions.Services;
@@ -12,28 +13,34 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
-namespace PaymentAPI.Infrastructure.Services
+namespace PaymentAPI.Infrastructure.Services;
+
+public class JwtService : IJwtService
 {
-    public class JwtService : IJwtService
+    private readonly IConfiguration _config;
+    private readonly ILogger<JwtService> _logger;
+
+    public JwtService(IConfiguration config, ILogger<JwtService> logger)
     {
-        private readonly IConfiguration _config;
+        _config = config;
+        _logger = logger;
+    }
 
-        public JwtService(IConfiguration config)
-        {
-            _config = config;
-        }
+    public string GenerateToken(int userId, string username, string role)
+    {
+        _logger.LogInformation("Generating JWT token for user: {Username}, Role: {Role}", username, role);
 
-        public string GenerateToken(int userId, string username, string role)
+        try
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
-            new Claim(JwtRegisteredClaimNames.Sub, username),
-            new Claim("id", userId.ToString()),
-            new Claim(ClaimTypes.Role, role)
-        };
+                new Claim(JwtRegisteredClaimNames.Sub, username),
+                new Claim("id", userId.ToString()),
+                new Claim(ClaimTypes.Role, role)
+            };
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
@@ -42,7 +49,14 @@ namespace PaymentAPI.Infrastructure.Services
                 expires: DateTime.UtcNow.AddHours(1),
                 signingCredentials: creds);
 
+            _logger.LogInformation("JWT token generated successfully for user: {Username}", username);
+
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating JWT token for user: {Username}", username);
+            throw;
         }
     }
 }

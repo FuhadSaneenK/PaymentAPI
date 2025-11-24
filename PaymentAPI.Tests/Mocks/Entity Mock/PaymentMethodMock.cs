@@ -1,25 +1,19 @@
 ﻿using PaymentAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace PaymentAPI.Tests.Mocks.Entity_Mock
+namespace PaymentAPI.Tests.Mocks.Entity_Mock;
+
+public static class PaymentMethodMock
 {
-    public static class PaymentMethodMock
+    public static PaymentMethod GetPaymentMethod(
+        int id = 1,
+        string method = "UPI",
+        string provider = "PhonePe")
     {
-        public static PaymentMethod GetPaymentMethod(
-            int id = 1,
-            string method = "UPI",
-            string provider = "PhonePe")
+        return new PaymentMethod
         {
-            return new PaymentMethod
-            {
-                Id = id,
-                MethodName = method,
-                Provider = provider
-            };
-        }
+            Id = id,
+            MethodName = method,
+            Provider = provider
+        };
     }
 }
