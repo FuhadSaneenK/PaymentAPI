@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PaymentAPI.Application.Constants
+﻿namespace PaymentAPI.Application.Constants
 {
     public static class StatusCode
     {

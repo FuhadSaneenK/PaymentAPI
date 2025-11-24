@@ -1,15 +1,20 @@
 ﻿using FluentValidation;
 using PaymentAPI.Application.Commands.Transactions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Validators.Transactions
 {
+    /// <summary>
+    /// Validator for <see cref="MakePaymentCommand"/> ensuring payment data is valid before processing.
+    /// </summary>
+    /// <remarks>
+    /// Validates amount (must be positive), account ID, payment method ID, and reference number presence.
+    /// Additional business rules (account existence, reference uniqueness) are validated in the handler.
+    /// </remarks>
     public class MakePaymentValidator : AbstractValidator<MakePaymentCommand>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MakePaymentValidator"/> class with validation rules.
+        /// </summary>
         public MakePaymentValidator()
         {
             RuleFor(x => x.Amount)

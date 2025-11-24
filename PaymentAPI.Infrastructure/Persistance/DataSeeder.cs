@@ -1,19 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PaymentAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace PaymentAPI.Infrastructure.Persistance
+namespace PaymentAPI.Infrastructure.Persistance;
+
+public class DataSeeder
 {
-    public class DataSeeder
+    public static async Task SeedAsync(PaymentDbContext context, ILogger? logger = null)
     {
-        public static async Task SeedAsync(PaymentDbContext context)
+        try
         {
+            logger?.LogInformation("Starting database seeding...");
+
             // Apply migrations if pending
             await context.Database.MigrateAsync();
+            logger?.LogInformation("Database migrations applied successfully");
 
             // -------- MERCHANTS --------
             if (!context.Merchants.Any())
@@ -28,6 +29,11 @@ namespace PaymentAPI.Infrastructure.Persistance
                 };
                 await context.Merchants.AddRangeAsync(merchants);
                 await context.SaveChangesAsync();
+                logger?.LogInformation("Seeded {Count} merchants", merchants.Count);
+            }
+            else
+            {
+                logger?.LogDebug("Merchants already exist, skipping seed");
             }
 
             // -------- ACCOUNTS --------
@@ -43,6 +49,11 @@ namespace PaymentAPI.Infrastructure.Persistance
                 };
                 await context.Accounts.AddRangeAsync(accounts);
                 await context.SaveChangesAsync();
+                logger?.LogInformation("Seeded {Count} accounts", accounts.Count);
+            }
+            else
+            {
+                logger?.LogDebug("Accounts already exist, skipping seed");
             }
 
             // -------- PAYMENT METHODS --------
@@ -58,6 +69,11 @@ namespace PaymentAPI.Infrastructure.Persistance
                 };
                 await context.PaymentMethods.AddRangeAsync(methods);
                 await context.SaveChangesAsync();
+                logger?.LogInformation("Seeded {Count} payment methods", methods.Count);
+            }
+            else
+            {
+                logger?.LogDebug("Payment methods already exist, skipping seed");
             }
 
             // -------- TRANSACTIONS (10 total) --------
@@ -79,25 +95,37 @@ namespace PaymentAPI.Infrastructure.Persistance
 
                 await context.Transactions.AddRangeAsync(transactions);
                 await context.SaveChangesAsync();
+                logger?.LogInformation("Seeded {Count} transactions", transactions.Count);
+            }
+            else
+            {
+                logger?.LogDebug("Transactions already exist, skipping seed");
             }
 
             // -------- USERS --------
             if (!context.Users.Any())
             {
                 var users = new List<User>
-    {
-        new User { Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"), Role = "Admin" },
-        new User { Username = "user1", PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), Role = "User" }
-    };
+                {
+                    new User { Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"), Role = "Admin" },
+                    new User { Username = "user1", PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), Role = "User" }
+                };
 
                 await context.Users.AddRangeAsync(users);
                 await context.SaveChangesAsync();
+                logger?.LogInformation("Seeded {Count} users", users.Count);
+            }
+            else
+            {
+                logger?.LogDebug("Users already exist, skipping seed");
             }
 
-
-
+            logger?.LogInformation("Database seeding completed successfully");
         }
-
-
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Error occurred during database seeding");
+            throw;
+        }
     }
 }

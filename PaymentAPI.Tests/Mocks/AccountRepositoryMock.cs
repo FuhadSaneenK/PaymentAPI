@@ -2,13 +2,12 @@
 using PaymentAPI.Application.Abstractions.Repositories;
 
 
-namespace PaymentAPI.Tests.Mocks
+namespace PaymentAPI.Tests.Mocks;
+
+public static class AccountRepositoryMock
 {
-    public static class AccountRepositoryMock
+    public static Mock<IAccountRepository> Get()
     {
-        public static Mock<IAccountRepository> Get()
-        {
-            return new Mock<IAccountRepository>();
-        }
+        return new Mock<IAccountRepository>();
     }
 }

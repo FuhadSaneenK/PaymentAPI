@@ -1,14 +1,10 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using PaymentAPI.Application.Abstractions.Repositories;
 using PaymentAPI.Application.Commands.Merchants;
 using PaymentAPI.Application.DTOs;
 using PaymentAPI.Application.Wrappers;
 using PaymentAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Handlers.Merchants
 {
@@ -20,14 +16,19 @@ namespace PaymentAPI.Application.Handlers.Merchants
         : IRequestHandler<CreateMerchantCommand, ApiResponse<MerchantDto>>
     {
         private readonly IMerchantRepository _merchantRepository;
+        private readonly ILogger<CreateMerchantCommandHandler> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateMerchantCommandHandler"/> class.
         /// </summary>
         /// <param name="merchantRepository">The repository for merchant data access.</param>
-        public CreateMerchantCommandHandler(IMerchantRepository merchantRepository)
+        /// <param name="logger">Logger instance.</param>
+        public CreateMerchantCommandHandler(
+            IMerchantRepository merchantRepository,
+            ILogger<CreateMerchantCommandHandler> logger)
         {
             _merchantRepository = merchantRepository;
+            _logger = logger;
         }
         
 
@@ -49,36 +50,51 @@ namespace PaymentAPI.Application.Handlers.Merchants
         /// </remarks>
         public async Task<ApiResponse<MerchantDto>> Handle(CreateMerchantCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Creating merchant - Name: {Name}, Email: {Email}", request.Name, request.Email);
+
             // 1. Check if email already exists
             var existingMerchant = await _merchantRepository.GetByEmailAsync(request.Email, cancellationToken);
 
             if (existingMerchant != null)
             {
+                _logger.LogWarning("Merchant creation failed: Email already exists - {Email}", request.Email);
                 return ApiResponse<MerchantDto>.Fail("Merchant with this email already exists.");
             }
 
-            // 2. Create entity
-            var merchant = new Merchant
+            try
             {
-                Name = request.Name,
-                Email = request.Email
-            };
+                // 2. Create entity
+                var merchant = new Merchant
+                {
+                    Name = request.Name,
+                    Email = request.Email
+                };
 
-            // 3. Add to DB through repository
-            await _merchantRepository.AddAsync(merchant, cancellationToken);
+                // 3. Add to DB through repository
+                await _merchantRepository.AddAsync(merchant, cancellationToken);
 
-            // 4. Save changes
-            await _merchantRepository.SaveChangesAsync(cancellationToken);
+                // 4. Save changes
+                await _merchantRepository.SaveChangesAsync(cancellationToken);
 
-            // 5. Map to DTO
-            var dto = new MerchantDto
+                _logger.LogInformation("Merchant created successfully - MerchantId: {MerchantId}, Name: {Name}", 
+                    merchant.Id, merchant.Name);
+
+                // 5. Map to DTO
+                var dto = new MerchantDto
+                {
+                    Id = merchant.Id,
+                    Name = merchant.Name,
+                    Email = merchant.Email
+                };
+
+                return ApiResponse<MerchantDto>.Created(dto, "Merchant created successfully");
+            }
+            catch (Exception ex)
             {
-                Id = merchant.Id,
-                Name = merchant.Name,
-                Email = merchant.Email
-            };
-
-            return ApiResponse<MerchantDto>.Created(dto, "Merchant created successfully");
+                _logger.LogError(ex, "Error creating merchant - Name: {Name}, Email: {Email}", 
+                    request.Name, request.Email);
+                throw;
+            }
         }
     }
 }

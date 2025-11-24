@@ -1,13 +1,9 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using PaymentAPI.Application.Abstractions.Repositories;
 using PaymentAPI.Application.Abstractions.Services;
 using PaymentAPI.Application.Commands.Auth;
 using PaymentAPI.Application.Wrappers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Handlers.Auth
 {
@@ -20,6 +16,7 @@ namespace PaymentAPI.Application.Handlers.Auth
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IJwtService _jwtService;
+        private readonly ILogger<LoginUserCommandHandler> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoginUserCommandHandler"/> class.
@@ -27,11 +24,13 @@ namespace PaymentAPI.Application.Handlers.Auth
         /// <param name="userRepository">The repository for user data access.</param>
         /// <param name="passwordHasher">The service for password hash verification.</param>
         /// <param name="jwtService">The service for JWT token generation.</param>
-        public LoginUserCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IJwtService jwtService)
+        /// <param name="logger">The logger instance.</param>
+        public LoginUserCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IJwtService jwtService, ILogger<LoginUserCommandHandler> logger)
         {
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
             _jwtService = jwtService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -51,14 +50,25 @@ namespace PaymentAPI.Application.Handlers.Auth
         /// </remarks>
         public async Task<ApiResponse<string>> Handle(LoginUserCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Login attempt for username: {Username}", request.Username);
+
             var user = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
             if (user == null)
+            {
+                _logger.LogWarning("Login failed: User not found - {Username}", request.Username);
                 return ApiResponse<string>.Fail("Invalid credentials");
+            }
 
             if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
+            {
+                _logger.LogWarning("Login failed: Invalid password for user - {Username}", request.Username);
                 return ApiResponse<string>.Fail("Invalid credentials");
+            }
 
             var token = _jwtService.GenerateToken(user.Id, user.Username, user.Role);
+
+            _logger.LogInformation("User logged in successfully - UserId: {UserId}, Username: {Username}, Role: {Role}", 
+                user.Id, user.Username, user.Role);
 
             return ApiResponse<string>.Success(token, "Login successful");
         }

@@ -1,14 +1,10 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using PaymentAPI.Application.Abstractions.Repositories;
 using PaymentAPI.Application.Abstractions.Services;
 using PaymentAPI.Application.Commands.Auth;
 using PaymentAPI.Application.Wrappers;
 using PaymentAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PaymentAPI.Application.Handlers.Auth
 {
@@ -20,16 +16,22 @@ namespace PaymentAPI.Application.Handlers.Auth
     {
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ILogger<RegisterUserCommandHandler> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RegisterUserCommandHandler"/> class.
         /// </summary>
         /// <param name="userRepository">The repository for user data access.</param>
         /// <param name="passwordHasher">The service for password hashing.</param>
-        public RegisterUserCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher)
+        /// <param name="logger">Logger instance.</param>
+        public RegisterUserCommandHandler(
+            IUserRepository userRepository, 
+            IPasswordHasher passwordHasher,
+            ILogger<RegisterUserCommandHandler> logger)
         {
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
+            _logger = logger;
         }
 
         /// <summary>
@@ -49,9 +51,14 @@ namespace PaymentAPI.Application.Handlers.Auth
         /// </remarks>
         public async Task<ApiResponse<string>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Registration attempt for username: {Username}", request.Username);
+
             var existing = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
             if (existing != null)
+            {
+                _logger.LogWarning("Registration failed: Username already exists - {Username}", request.Username);
                 return ApiResponse<string>.Fail("Username already exists");
+            }
 
             var user = new User
             {
@@ -59,10 +66,21 @@ namespace PaymentAPI.Application.Handlers.Auth
                 PasswordHash = _passwordHasher.Hash(request.Password)
             };
 
-            await _userRepository.AddAsync(user, cancellationToken);
-            await _userRepository.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _userRepository.AddAsync(user, cancellationToken);
+                await _userRepository.SaveChangesAsync(cancellationToken);
 
-            return ApiResponse<string>.Success("User registered successfully");
+                _logger.LogInformation("User registered successfully - UserId: {UserId}, Username: {Username}", 
+                    user.Id, user.Username);
+
+                return ApiResponse<string>.Success("User registered successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while registering user: {Username}", request.Username);
+                throw;
+            }
         }
     }
 

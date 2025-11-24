@@ -1,9 +1,5 @@
-﻿using PaymentAPI.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PaymentAPI.Application.Wrappers;
+using PaymentAPI.Domain.Entities;
 
 namespace PaymentAPI.Application.Abstractions.Repositories
 {
@@ -28,6 +24,36 @@ namespace PaymentAPI.Application.Abstractions.Repositories
         /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
         /// <returns>A list of transactions for the specified account.</returns>
         Task<List<Transaction>> GetByAccountIdAsync(int accountId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Retrieves a paginated list of transactions for a specific account with optional filters.
+        /// </summary>
+        /// <param name="accountId">The unique identifier of the account.</param>
+        /// <param name="startDate">Optional start date filter.</param>
+        /// <param name="endDate">Optional end date filter.</param>
+        /// <param name="type">Optional transaction type filter ("Payment" or "Refund").</param>
+        /// <param name="status">Optional status filter ("Completed", "Pending", "Failed").</param>
+        /// <param name="pageNumber">The page number to retrieve (1-based).</param>
+        /// <param name="pageSize">The number of items per page.</param>
+        /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+        /// <returns>A paginated result of transactions.</returns>
+        Task<PagedResult<Transaction>> GetByAccountIdPagedAsync(
+            int accountId,
+            DateTime? startDate,
+            DateTime? endDate,
+            string? type,
+            string? status,
+            int pageNumber,
+            int pageSize,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Retrieves all transactions for all accounts belonging to a specific merchant.
+        /// </summary>
+        /// <param name="merchantId">The unique identifier of the merchant.</param>
+        /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+        /// <returns>A list of all transactions for the merchant.</returns>
+        Task<List<Transaction>> GetByMerchantIdAsync(int merchantId, CancellationToken cancellationToken);
     }
 }
 

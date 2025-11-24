@@ -1,27 +1,37 @@
 ﻿using MediatR;
 using PaymentAPI.Application.Wrappers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace PaymentAPI.Application.Commands.Auth
+namespace PaymentAPI.Application.Commands.Auth;
+
+/// <summary>
+/// Command to register a new user in the system.
+/// Creates a new user account with hashed password.
+/// </summary>
+/// <example>
+/// <code>
+/// {
+///   "username": "newuser",
+///   "password": "SecurePass123"
+/// }
+/// </code>
+/// </example>
+public class RegisterUserCommand : IRequest<ApiResponse<string>>
 {
     /// <summary>
-    /// Command to register a new user in the system.
-    /// Creates a new user account with hashed password.
+    /// Gets or sets the username for the new user account.
     /// </summary>
-    public class RegisterUserCommand : IRequest<ApiResponse<string>>
-    {
-        /// <summary>
-        /// Gets or sets the username for the new user account.
-        /// </summary>
-        public string Username { get; set; }
-        
-        /// <summary>
-        /// Gets or sets the password for the new user account (will be hashed before storage).
-        /// </summary>
-        public string Password { get; set; }
-    }
+    /// <remarks>
+    /// Must be at least 3 characters long and unique.
+    /// </remarks>
+    /// <example>newuser</example>
+    public string Username { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the password for the new user account (will be hashed before storage).
+    /// </summary>
+    /// <remarks>
+    /// Must be at least 6 characters long.
+    /// </remarks>
+    /// <example>SecurePass123</example>
+    public string Password { get; set; }
 }
