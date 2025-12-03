@@ -32,6 +32,34 @@ public class MerchantController : BaseApiController
     }
 
     /// <summary>
+    /// Retrieves all merchants in the system.
+    /// </summary>
+    /// <returns>
+    /// Returns 200 OK with a list of all merchants.
+    /// </returns>
+    /// <response code="200">Merchants retrieved successfully.</response>
+    /// <response code="401">Unauthorized - JWT token required.</response>
+    /// <response code="403">Forbidden - Admin role required.</response>
+    /// <remarks>
+    /// This endpoint is restricted to Admin users only.
+    /// Normal users should use GET /api/merchant/{id} to retrieve their specific merchant.
+    /// </remarks>
+    /// <example>
+    /// GET /api/merchant
+    /// </example>
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAllMerchants()
+    {
+        _logger.LogInformation("Get all merchants request received");
+        
+        var query = new GetAllMerchantsQuery();
+        var response = await _mediator.Send(query);
+        
+        return StatusCode(response.Status, response);
+    }
+
+    /// <summary>
     /// Creates a new merchant.
     /// </summary>
     /// <param name="command">The command containing merchant details (name and email).</param>

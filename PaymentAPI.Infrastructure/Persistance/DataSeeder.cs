@@ -105,10 +105,44 @@ public class DataSeeder
             // -------- USERS --------
             if (!context.Users.Any())
             {
+                // No users exist - seed new users
                 var users = new List<User>
                 {
-                    new User { Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"), Role = "Admin" },
-                    new User { Username = "user1", PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), Role = "User" }
+                    // Admin user (no MerchantId - can see all merchants)
+                    new User 
+                    { 
+                        Username = "admin", 
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"), 
+                        Role = "Admin",
+                        MerchantId = null  // Admin has no merchant restriction
+                    },
+                    
+                    // Normal user for TechMart (MerchantId = 1)
+                    new User 
+                    { 
+                        Username = "techmart_user", 
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), 
+                        Role = "User",
+                        MerchantId = 1  // Can only see TechMart accounts
+                    },
+                    
+                    // Normal user for StyleHub (MerchantId = 2)
+                    new User 
+                    { 
+                        Username = "stylehub_user", 
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), 
+                        Role = "User",
+                        MerchantId = 2  // Can only see StyleHub accounts
+                    },
+                    
+                    // Keep existing user1 for backward compatibility (assign to TechMart)
+                    new User 
+                    { 
+                        Username = "user1", 
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), 
+                        Role = "User",
+                        MerchantId = 1  // Assigned to TechMart
+                    }
                 };
 
                 await context.Users.AddRangeAsync(users);
@@ -117,7 +151,95 @@ public class DataSeeder
             }
             else
             {
-                logger?.LogDebug("Users already exist, skipping seed");
+                // Users already exist - check if we need to update MerchantId
+                logger?.LogDebug("Users already exist, checking if MerchantId needs to be updated...");
+                
+                var existingUsers = await context.Users.ToListAsync();
+                bool updated = false;
+
+                foreach (var user in existingUsers)
+                {
+                    // Only update if MerchantId is null and user is not Admin
+                    if (user.MerchantId == null && user.Role != "Admin")
+                    {
+                        // Assign MerchantId based on username or default to TechMart
+                        if (user.Username == "user1" || user.Username == "techmart_user")
+                        {
+                            user.MerchantId = 1; // TechMart
+                            updated = true;
+                            logger?.LogInformation("Updated user '{Username}' with MerchantId = 1 (TechMart)", user.Username);
+                        }
+                        else if (user.Username == "stylehub_user")
+                        {
+                            user.MerchantId = 2; // StyleHub
+                            updated = true;
+                            logger?.LogInformation("Updated user '{Username}' with MerchantId = 2 (StyleHub)", user.Username);
+                        }
+                        else if (user.Username == "booknest_user")
+                        {
+                            user.MerchantId = 3; // BookNest
+                            updated = true;
+                            logger?.LogInformation("Updated user '{Username}' with MerchantId = 3 (BookNest)", user.Username);
+                        }
+                        else
+                        {
+                            // Default: Assign to TechMart for any other non-admin users
+                            user.MerchantId = 1; // TechMart
+                            updated = true;
+                            logger?.LogInformation("Updated user '{Username}' with MerchantId = 1 (TechMart - Default)", user.Username);
+                        }
+                    }
+                    else if (user.Role == "Admin" && user.MerchantId != null)
+                    {
+                        // Ensure Admin users don't have a MerchantId
+                        user.MerchantId = null;
+                        updated = true;
+                        logger?.LogInformation("Removed MerchantId from Admin user '{Username}'", user.Username);
+                    }
+                }
+
+                if (updated)
+                {
+                    await context.SaveChangesAsync();
+                    logger?.LogInformation("✅ Updated existing users with MerchantId assignments");
+                }
+                else
+                {
+                    logger?.LogDebug("No users needed MerchantId update");
+                }
+                
+                // Check if we need to add new test users
+                var usernamesInDb = existingUsers.Select(u => u.Username).ToList();
+                var newUsers = new List<User>();
+
+                if (!usernamesInDb.Contains("techmart_user"))
+                {
+                    newUsers.Add(new User 
+                    { 
+                        Username = "techmart_user", 
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), 
+                        Role = "User",
+                        MerchantId = 1
+                    });
+                }
+
+                if (!usernamesInDb.Contains("stylehub_user"))
+                {
+                    newUsers.Add(new User 
+                    { 
+                        Username = "stylehub_user", 
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("User@123"), 
+                        Role = "User",
+                        MerchantId = 2
+                    });
+                }
+
+                if (newUsers.Any())
+                {
+                    await context.Users.AddRangeAsync(newUsers);
+                    await context.SaveChangesAsync();
+                    logger?.LogInformation("Added {Count} new test users", newUsers.Count);
+                }
             }
 
             logger?.LogInformation("Database seeding completed successfully");

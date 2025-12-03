@@ -8,14 +8,16 @@ public static class UserMock
         int id = 1,
         string username = "testuser",
         string passwordHash = "HASHEDPWD",
-        string role = "User")
+        string role = "User",
+        int? merchantId = null)
     {
         return new User
         {
             Id = id,
             Username = username,
             PasswordHash = passwordHash,
-            Role = role
+            Role = role,
+            MerchantId = merchantId
         };
     }
 }

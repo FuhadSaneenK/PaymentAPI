@@ -46,7 +46,7 @@ namespace PaymentAPI.Application.Handlers.Auth
         /// This method performs the following steps:
         /// 1. Retrieves the user by username
         /// 2. Verifies the password hash
-        /// 3. Generates a JWT token containing user ID, username, and role
+        /// 3. Generates a JWT token containing user ID, username, role, and merchantId (for non-admin users)
         /// </remarks>
         public async Task<ApiResponse<string>> Handle(LoginUserCommand request, CancellationToken cancellationToken)
         {
@@ -65,10 +65,11 @@ namespace PaymentAPI.Application.Handlers.Auth
                 return ApiResponse<string>.Fail("Invalid credentials");
             }
 
-            var token = _jwtService.GenerateToken(user.Id, user.Username, user.Role);
+            // Generate token with MerchantId for non-admin users
+            var token = _jwtService.GenerateToken(user.Id, user.Username, user.Role, user.MerchantId);
 
-            _logger.LogInformation("User logged in successfully - UserId: {UserId}, Username: {Username}, Role: {Role}", 
-                user.Id, user.Username, user.Role);
+            _logger.LogInformation("User logged in successfully - UserId: {UserId}, Username: {Username}, Role: {Role}, MerchantId: {MerchantId}", 
+                user.Id, user.Username, user.Role, user.MerchantId);
 
             return ApiResponse<string>.Success(token, "Login successful");
         }

@@ -18,6 +18,12 @@ namespace PaymentAPI.Application.Validators.Transactions
             RuleFor(x => x.ReferenceNo)
                 .NotEmpty()
                 .WithMessage("Reference number is required to process refund.");
+
+            RuleFor(x => x.Reason)
+                .NotEmpty()
+                .WithMessage("Reason is required for refund request.")
+                .MaximumLength(500)
+                .WithMessage("Reason cannot exceed 500 characters.");
         }
     }
 }

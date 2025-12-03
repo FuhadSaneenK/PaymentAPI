@@ -42,7 +42,7 @@ try
     // FluentValidation
     builder.Services.AddValidatorsFromAssembly(typeof(CreateMerchantCommand).Assembly);
 
-    // Pipeline
+    // Pipeline behaviors
     builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 
@@ -56,12 +56,28 @@ try
     builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
     builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IRefundRequestRepository, RefundRequestRepository>();
 
     // Services
     builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
     builder.Services.AddScoped<IJwtService, JwtService>();
 
     builder.Services.AddControllers();
+
+    // ----------------------------
+    // CORS (IMPORTANT for Angular)
+    // ----------------------------
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAngular",
+            policy =>
+            {
+                policy.WithOrigins("http://localhost:4200")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            });
+    });
 
     // ----------------------------
     // JWT Authentication
@@ -85,7 +101,7 @@ try
     builder.Services.AddAuthorization();
 
     // ----------------------------
-    // Swagger with JWT
+    // Swagger + JWT Support
     // ----------------------------
     builder.Services.AddEndpointsApiExplorer();
 
@@ -125,7 +141,7 @@ try
 
     var app = builder.Build();
 
-    // Add Serilog request logging middleware
+    // Serilog HTTP Request Logging
     app.UseSerilogRequestLogging(options =>
     {
         options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
@@ -136,7 +152,9 @@ try
         };
     });
 
+    // ----------------------------
     // Seed Database
+    // ----------------------------
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -153,7 +171,7 @@ try
     }
 
     // ----------------------------
-    // Middleware
+    // Middleware Pipeline
     // ----------------------------
     if (app.Environment.IsDevelopment())
     {
@@ -162,6 +180,11 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    // ----------------------------
+    // Enable CORS BEFORE Authentication
+    // ----------------------------
+    app.UseCors("AllowAngular");
 
     app.UseAuthentication();
     app.UseAuthorization();

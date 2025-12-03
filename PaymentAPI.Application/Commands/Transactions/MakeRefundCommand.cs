@@ -5,20 +5,24 @@ using PaymentAPI.Application.Wrappers;
 namespace PaymentAPI.Application.Commands.Transactions;
 
 /// <summary>
-/// Command to process a refund transaction and decrease account balance.
-/// Validates the original payment exists and refund amount does not exceed original payment.
+/// Command to create a refund request that requires admin approval.
 /// </summary>
+/// <remarks>
+/// Refund requests are not processed immediately. They go through an approval workflow
+/// where an admin must approve or reject them before the actual refund transaction is created.
+/// </remarks>
 /// <example>
 /// <code>
 /// {
 ///   "amount": 150.00,
 ///   "accountId": 1,
-///   "referenceNo": "PAY-2024-12-001"
+///   "referenceNo": "PAY-2024-12-001",
+///   "reason": "Product was defective"
 /// }
 /// </code>
-/// This creates a refund with reference "PAY-2024-12-001-REF"
+/// This creates a refund request in "Pending" status
 /// </example>
-public class MakeRefundCommand : IRequest<ApiResponse<TransactionDto>>
+public class MakeRefundCommand : IRequest<ApiResponse<RefundRequestDto>>
 {
     /// <summary>
     /// Gets or sets the refund amount to be debited from the account.
@@ -45,7 +49,17 @@ public class MakeRefundCommand : IRequest<ApiResponse<TransactionDto>>
     /// </summary>
     /// <remarks>
     /// The refund transaction will get a reference number in the format: {OriginalRef}-REF
+    /// (Only after admin approval)
     /// </remarks>
     /// <example>PAY-2024-12-001</example>
     public string ReferenceNo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the reason for requesting the refund.
+    /// </summary>
+    /// <remarks>
+    /// This helps admins understand why the refund is being requested.
+    /// </remarks>
+    /// <example>Product was defective</example>
+    public string Reason { get; set; } = string.Empty;
 }

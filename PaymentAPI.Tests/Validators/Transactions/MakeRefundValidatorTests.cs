@@ -21,7 +21,8 @@ public class MakeRefundValidatorTests
         { 
             Amount = 0, 
             AccountId = 1, 
-            ReferenceNo = "REF001" 
+            ReferenceNo = "REF001",
+            Reason = "Test reason"
         };
 
         // Act
@@ -40,7 +41,8 @@ public class MakeRefundValidatorTests
         { 
             Amount = -50, 
             AccountId = 1, 
-            ReferenceNo = "REF001" 
+            ReferenceNo = "REF001",
+            Reason = "Test reason"
         };
 
         // Act
@@ -59,7 +61,8 @@ public class MakeRefundValidatorTests
         { 
             Amount = 100, 
             AccountId = 0, 
-            ReferenceNo = "REF001" 
+            ReferenceNo = "REF001",
+            Reason = "Test reason"
         };
 
         // Act
@@ -78,7 +81,8 @@ public class MakeRefundValidatorTests
         { 
             Amount = 100, 
             AccountId = 1, 
-            ReferenceNo = "" 
+            ReferenceNo = "",
+            Reason = "Test reason"
         };
 
         // Act
@@ -90,6 +94,47 @@ public class MakeRefundValidatorTests
     }
 
     [Fact]
+    public void Should_HaveError_When_Reason_IsEmpty()
+    {
+        // Arrange
+        var command = new MakeRefundCommand 
+        { 
+            Amount = 100, 
+            AccountId = 1, 
+            ReferenceNo = "REF001",
+            Reason = ""
+        };
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Reason)
+              .WithErrorMessage("Reason is required for refund request.");
+    }
+
+    [Fact]
+    public void Should_HaveError_When_Reason_ExceedsMaxLength()
+    {
+        // Arrange
+        var longReason = new string('A', 501); // 501 characters
+        var command = new MakeRefundCommand 
+        { 
+            Amount = 100, 
+            AccountId = 1, 
+            ReferenceNo = "REF001",
+            Reason = longReason
+        };
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Reason)
+              .WithErrorMessage("Reason cannot exceed 500 characters.");
+    }
+
+    [Fact]
     public void Should_NotHaveError_When_AllFields_AreValid()
     {
         // Arrange
@@ -97,7 +142,8 @@ public class MakeRefundValidatorTests
         { 
             Amount = 75.25m, 
             AccountId = 1, 
-            ReferenceNo = "REF001" 
+            ReferenceNo = "REF001",
+            Reason = "Product was defective"
         };
 
         // Act

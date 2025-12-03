@@ -82,15 +82,15 @@ public class TransactionController : BaseApiController
     }
 
     /// <summary>
-    /// Processes a refund transaction with strict validation.
+    /// Creates a refund request that requires admin approval.
     /// </summary>
-    /// <param name="command">The refund command containing amount, account ID, and original payment reference number.</param>
+    /// <param name="command">The refund command containing amount, account ID, original payment reference number, and reason.</param>
     /// <returns>
-    /// Returns 201 Created with refund transaction details if processed successfully,
+    /// Returns 201 Created with refund request details if submitted successfully,
     /// or 400 Bad Request if validation fails or business rules are violated,
     /// or 404 Not Found if account or original payment doesn't exist.
     /// </returns>
-    /// <response code="201">Refund processed successfully, account balance decreased.</response>
+    /// <response code="201">Refund request created successfully and is pending admin approval.</response>
     /// <response code="400">Validation failed or business rule violation.</response>
     /// <response code="404">Account or original payment not found.</response>
     /// <response code="401">Unauthorized - JWT token required.</response>
@@ -100,22 +100,30 @@ public class TransactionController : BaseApiController
     /// - Original payment must exist with the provided reference number
     /// - Original transaction must be of type "Payment" (cannot refund a refund)
     /// - Refund amount cannot exceed original payment amount
-    /// - Only one refund allowed per payment reference
+    /// - Only one refund request allowed per payment reference
     /// - Reference number must belong to the same account
-    /// - Account balance decreases by refund amount
-    /// - New reference number format: {OriginalRef}-REF
-    /// - Transaction type set to "Refund"
-    /// - Transaction status set to "Completed"
+    /// - Reason is required (max 500 characters)
+    /// - Refund request is created in "Pending" status
+    /// - Admin approval is required before the actual refund is processed
+    /// 
+    /// Workflow:
+    /// 1. User submits refund request
+    /// 2. Request is validated and stored in "Pending" status
+    /// 3. Admin reviews and approves/rejects the request
+    /// 4. If approved, refund transaction is created and balance is updated
+    /// 5. If rejected, no transaction is created
     /// </remarks>
     /// <example>
     /// POST /api/transaction/refund
     /// {
     ///   "amount": 200.00,
     ///   "accountId": 1,
-    ///   "referenceNo": "REF-12345"
+    ///   "referenceNo": "REF-12345",
+    ///   "reason": "Product was defective"
     /// }
     /// 
-    /// This will create a refund with reference "REF-12345-REF"
+    /// This will create a refund request that requires admin approval.
+    /// Once approved, a refund transaction with reference "REF-12345-REF" will be created.
     /// </example>
     [HttpPost("refund")]
     public async Task<IActionResult> MakeRefund([FromBody] MakeRefundCommand command)
@@ -127,12 +135,12 @@ public class TransactionController : BaseApiController
         
         if (response.IsSuccess)
         {
-            _logger.LogInformation("Refund processed successfully - AccountId: {AccountId}, Amount: {Amount}, Reference: {ReferenceNo}",
+            _logger.LogInformation("Refund request created successfully - AccountId: {AccountId}, Amount: {Amount}, Reference: {ReferenceNo}",
                 command.AccountId, command.Amount, command.ReferenceNo);
         }
         else
         {
-            _logger.LogWarning("Refund failed - AccountId: {AccountId}, Amount: {Amount}, Reason: {Message}",
+            _logger.LogWarning("Refund request failed - AccountId: {AccountId}, Amount: {Amount}, Reason: {Message}",
                 command.AccountId, command.Amount, response.Message);
         }
         

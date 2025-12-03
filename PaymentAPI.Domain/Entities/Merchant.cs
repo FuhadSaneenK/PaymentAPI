@@ -34,4 +34,12 @@ public class Merchant
     /// Navigation property. A merchant can have multiple accounts.
     /// </remarks>
     public List<Account> Accounts { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the collection of users associated with this merchant.
+    /// </summary>
+    /// <remarks>
+    /// Navigation property. A merchant can have multiple users (employees).
+    /// </remarks>
+    public List<User> Users { get; set; } = new();
 }

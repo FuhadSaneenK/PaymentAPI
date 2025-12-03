@@ -25,5 +25,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.Role)
             .IsRequired()
             .HasMaxLength(20);
+
+        // Configure relationship with Merchant
+        builder.HasOne(x => x.Merchant)
+            .WithMany(x => x.Users)
+            .HasForeignKey(x => x.MerchantId)
+            .OnDelete(DeleteBehavior.SetNull); // When merchant is deleted, set user's MerchantId to null
     }
 }

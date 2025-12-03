@@ -38,4 +38,21 @@ public class User
     /// Roles are used for authorization and access control.
     /// </remarks>
     public string Role { get; set; } = "User";
+
+    /// <summary>
+    /// Gets or sets the foreign key to the merchant this user belongs to.
+    /// </summary>
+    /// <remarks>
+    /// Null for Admin users who can see all merchants.
+    /// Required for regular users to restrict them to their merchant's accounts.
+    /// </remarks>
+    public int? MerchantId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the merchant this user belongs to.
+    /// </summary>
+    /// <remarks>
+    /// Navigation property. Null for Admin users.
+    /// </remarks>
+    public Merchant? Merchant { get; set; }
 }
